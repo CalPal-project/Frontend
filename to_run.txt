@@ -1,0 +1,3 @@
+npm install - za instalacijo paketov
+npm run format - idk
+npm run dev - za zagon appa
