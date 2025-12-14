@@ -2,680 +2,478 @@
   <div class="meals-container">
     <!-- Header -->
     <header class="meals-header">
-      <div class="header-content">
-        <h1>🍽️ Sledenje obrokom</h1>
-        <div class="header-actions">
-          <button @click="goToDashboard" class="back-btn">← Nazaj na Dashboard</button>
-          <span class="user-info">Uporabnik: {{ currentUser }}</span>
-        </div>
-      </div>
+      <h1>🍽️ Sledenje obrokom</h1>
+      <button @click="goToDashboard" class="back-btn">← Nazaj na Dashboard</button>
     </header>
-    
-    <!-- Main content -->
+
     <main class="meals-main">
-      <!-- Danes -->
-      <div class="today-section">
-        <h2>📅 Današnji obroki</h2>
-        <div class="date-display">
-          {{ todayDate }}
+      <!-- AddMealForm -->
+      <AddMealForm @meal-added="loadMeals" />
+
+      <!-- Današnji obroki -->
+      <section class="card today-meals">
+        <div class="card-header">
+          <h2>📅 Današnji obroki</h2>
+          <button @click="loadMeals" class="refresh-btn" :disabled="loading">
+            🔄 {{ loading ? 'Nalagam...' : 'Osveži' }}
+          </button>
         </div>
-        
-        <!-- Kalorijski meter -->
-        <div class="calorie-meter">
-          <div class="meter-header">
-            <h3>🔥 Kalorije: {{ totalCalories }} / {{ dailyGoal }} kcal</h3>
-            <span class="meter-percentage">{{ caloriePercentage }}%</span>
+
+        <!-- Skupne kalorije -->
+        <div class="summary">
+          <div class="summary-item">
+            <span class="label">Skupaj obrokov:</span>
+            <span class="value">{{ meals.length }}</span>
           </div>
-          <div class="meter-bar">
-            <div 
-              class="meter-fill" 
-              :style="{ width: caloriePercentage + '%' }"
-              :class="{ 'over-limit': caloriePercentage > 100 }"
-            ></div>
-          </div>
-          <div class="meter-labels">
-            <span>0</span>
-            <span>{{ dailyGoal }} kcal</span>
+          <div class="summary-item">
+            <span class="label">Skupne kalorije:</span>
+            <span class="value calories">{{ totalCalories }} kcal</span>
           </div>
         </div>
-        
+
         <!-- Seznam obrokov -->
-        <div class="meals-list">
-          <h3>Vaši obroki danes:</h3>
-          
-          <div v-if="meals.length === 0" class="no-meals">
-            <p>🎉 Danes še niste vnesli nobenega obroka!</p>
-            <button @click="addSampleMeal" class="add-sample-btn">
-              + Dodaj testni obrok
-            </button>
-          </div>
-          
-          <div v-else class="meals-items">
-            <div v-for="(meal, index) in meals" :key="index" class="meal-item">
-              <div class="meal-info">
-                <span class="meal-time">{{ meal.time }}</span>
-                <span class="meal-name">{{ meal.name }}</span>
-                <span class="meal-calories">{{ meal.calories }} kcal</span>
+        <div v-if="loading" class="loading">⏳ Nalagam obroke...</div>
+
+        <div v-else-if="meals.length === 0" class="no-meals">
+          <p>Danes še nimaš nobenega obroka. Dodaj svoj prvi obrok zgoraj!</p>
+        </div>
+
+        <div v-else class="meals-list">
+          <div v-for="meal in meals" :key="meal.id" class="meal-card">
+            <div class="meal-header">
+              <div class="meal-type">
+                <span class="icon">{{ getMealIcon(meal.type) }}</span>
+                <h3>{{ meal.type }}</h3>
               </div>
-              <button @click="removeMeal(index)" class="remove-meal-btn">🗑️</button>
+              <div class="meal-info">
+                <span class="time">🕐 {{ formatTime(meal.date) }}</span>
+                <span class="calories">🔥 {{ meal.totalCalories }} kcal</span>
+              </div>
+            </div>
+
+            <div class="meal-foods">
+              <h4>Vsebuje:</h4>
+              <ul>
+                <li v-for="(food, index) in meal.foods" :key="index" class="food-item">
+                  <span class="food-name">{{ food.foodName }}</span>
+                  <span class="food-details">{{ food.amount }}g = {{ food.calories }} kcal</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="meal-footer">
+              <span class="meal-date">📅 {{ formatDate(meal.date) }}</span>
+              <button @click="deleteMeal(meal.id)" class="delete-btn" title="Izbriši obrok">
+                🗑️
+              </button>
             </div>
           </div>
         </div>
-        
-        <!-- Dodaj nov obrok -->
-        <div class="add-meal-section">
-          <h3>➕ Dodaj nov obrok</h3>
-          <div class="add-meal-form">
-            <input 
-              v-model="newMeal.name" 
-              type="text" 
-              placeholder="Ime obroka (npr. 'Zajtrk: ovsenka')"
-              class="meal-input"
-            >
-            <input 
-              v-model="newMeal.calories" 
-              type="number" 
-              placeholder="Kalorije (kcal)"
-              class="meal-input calories-input"
-            >
-            <button @click="addMeal" class="add-btn">
-              Dodaj obrok
-            </button>
-          </div>
-          
-          <div class="quick-actions">
-            <button 
-              v-for="quickMeal in quickMeals" 
-              :key="quickMeal.name"
-              @click="addQuickMeal(quickMeal)"
-              class="quick-btn"
-            >
-              {{ quickMeal.emoji }} {{ quickMeal.name }} ({{ quickMeal.calories }} kcal)
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Statistike -->
-      <div class="stats-section">
-        <h2>📈 Statistike</h2>
-        <div class="stats-cards">
-          <div class="stat-card">
-            <div class="stat-value">{{ meals.length }}</div>
-            <div class="stat-label">Obrokov danes</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ averageCalories }}</div>
-            <div class="stat-label">Povprečje/obrok</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ remainingCalories }}</div>
-            <div class="stat-label">Preostalo kcal</div>
-          </div>
-        </div>
-        
-        <div class="macros">
-          <h3>🍎 Makrohranila</h3>
-          <div class="macro-item">
-            <span class="macro-name">Beljakovine</span>
-            <div class="macro-bar">
-              <div class="macro-fill protein"></div>
-            </div>
-            <span class="macro-value">65g</span>
-          </div>
-          <div class="macro-item">
-            <span class="macro-name">Ogljikovi hidrati</span>
-            <div class="macro-bar">
-              <div class="macro-fill carbs"></div>
-            </div>
-            <span class="macro-value">180g</span>
-          </div>
-          <div class="macro-item">
-            <span class="macro-name">Maščobe</span>
-            <div class="macro-bar">
-              <div class="macro-fill fats"></div>
-            </div>
-            <span class="macro-value">45g</span>
-          </div>
-        </div>
-      </div>
+      </section>
     </main>
-    
-    <!-- Footer -->
-    <footer class="meals-footer">
-      <button @click="resetDay" class="reset-btn">🔄 Ponastavi dan</button>
-      <p>Calorie Tracker • Sledenje obrokom</p>
-    </footer>
   </div>
 </template>
 
 <script>
+import AddMealForm from '@/components/AddMealForm.vue'
+import { mealApi } from '@/api'
+
 export default {
   name: 'MealsView',
+  components: { AddMealForm },
   data() {
     return {
-      currentUser: 'Testni uporabnik',
-      dailyGoal: 2000,
-      meals: [
-        { name: 'Zajtrk: Ovsenka z jagodami', time: '08:30', calories: 350 },
-        { name: 'Kosilo: Piščanec z rižem', time: '12:45', calories: 550 },
-        { name: 'Prigrizek: Jabolko', time: '15:30', calories: 95 }
-      ],
-      newMeal: {
-        name: '',
-        calories: ''
-      },
-      quickMeals: [
-        { emoji: '🥗', name: 'Solata', calories: 150 },
-        { emoji: '🥪', name: 'Sendvič', calories: 300 },
-        { emoji: '🍎', name: 'Jabolko', calories: 95 },
-        { emoji: '🥤', name: 'Sok', calories: 120 }
-      ]
-    }
-  },
-  computed: {
-    todayDate() {
-      const now = new Date()
-      return now.toLocaleDateString('sl-SI', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    },
-    
-    totalCalories() {
-      return this.meals.reduce((sum, meal) => sum + parseInt(meal.calories), 0)
-    },
-    
-    caloriePercentage() {
-      return Math.min(Math.round((this.totalCalories / this.dailyGoal) * 100), 100)
-    },
-    
-    averageCalories() {
-      if (this.meals.length === 0) return 0
-      return Math.round(this.totalCalories / this.meals.length)
-    },
-    
-    remainingCalories() {
-      return Math.max(this.dailyGoal - this.totalCalories, 0)
+      meals: [],
+      loading: false,
+      error: null,
     }
   },
   mounted() {
-    const user = localStorage.getItem('currentUser')
-    if (user) {
-      this.currentUser = user
-    }
-    
-    // Dodaj čas za nove obroke
-    this.updateMealTimes()
+    this.loadMeals()
+  },
+  computed: {
+    totalCalories() {
+      return this.meals.reduce((sum, meal) => sum + meal.totalCalories, 0)
+    },
   },
   methods: {
     goToDashboard() {
       this.$router.push('/dashboard')
     },
-    
-    addMeal() {
-      if (!this.newMeal.name.trim() || !this.newMeal.calories) {
-        alert('Prosimo, vnesite ime in kalorije obroka!')
+
+    async loadMeals() {
+      this.loading = true
+      this.error = null
+      try {
+        // Po potrebi prilagodi API pot
+        console.log("v view bo klicau api")
+        const res = await mealApi.get('/mealsToday')
+        this.meals = res.data
+        
+      } catch (err) {
+        console.error('Napaka pri nalaganju obrokov:', err)
+        this.error = 'Napaka pri nalaganju obrokov'
+        // Za testiranje - dodaj testne podatke če API še ne deluje
+        this.meals = this.getMockMeals()
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteMeal(mealId) {
+      if (!confirm('Ste prepričani, da želite izbrisati ta obrok?')) {
         return
       }
-      
-      const calories = parseInt(this.newMeal.calories)
-      if (isNaN(calories) || calories <= 0) {
-        alert('Prosimo, vnesite veljavno število kalorij!')
-        return
+
+      try {
+        await mealApi.delete(`/api/meals/${mealId}`)
+        this.loadMeals() // Osveži seznam
+      } catch (err) {
+        console.error('Napaka pri brisanju obroka:', err)
+        alert('Napaka pri brisanju obroka')
       }
-      
-      const now = new Date()
-      const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
-                         now.getMinutes().toString().padStart(2, '0')
-      
-      this.meals.push({
-        name: this.newMeal.name,
-        time: timeString,
-        calories: calories
-      })
-      
-      // Reset forma
-      this.newMeal.name = ''
-      this.newMeal.calories = ''
     },
-    
-    addQuickMeal(quickMeal) {
-      const now = new Date()
-      const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
-                         now.getMinutes().toString().padStart(2, '0')
-      
-      this.meals.push({
-        name: `${quickMeal.emoji} ${quickMeal.name}`,
-        time: timeString,
-        calories: quickMeal.calories
-      })
-    },
-    
-    addSampleMeal() {
-      const sampleMeals = [
-        { name: 'Jogurt z oreščki', calories: 250 },
-        { name: 'Piščančji burger', calories: 450 },
-        { name: 'Tortilja s šunko', calories: 320 }
-      ]
-      
-      const randomMeal = sampleMeals[Math.floor(Math.random() * sampleMeals.length)]
-      const now = new Date()
-      const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
-                         now.getMinutes().toString().padStart(2, '0')
-      
-      this.meals.push({
-        name: randomMeal.name,
-        time: timeString,
-        calories: randomMeal.calories
-      })
-    },
-    
-    removeMeal(index) {
-      this.meals.splice(index, 1)
-    },
-    
-    updateMealTimes() {
-      // Samo za demo - doda čas trenutnim obrokom
-      const times = ['08:30', '12:45', '15:30']
-      this.meals.forEach((meal, index) => {
-        if (!meal.time && times[index]) {
-          meal.time = times[index]
-        }
-      })
-    },
-    
-    resetDay() {
-      if (confirm('Ali ste prepričani, da želite ponastaviti današnje obroke?')) {
-        this.meals = []
+
+    getMealIcon(type) {
+      const icons = {
+        Zajtrk: '🍳',
+        Kosilo: '🍲',
+        Večerja: '🍽️',
+        Prigrizek: '🍎',
       }
-    }
-  }
+      return icons[type] || '🍴'
+    },
+
+    formatDate(dateString) {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('sl-SI', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    },
+
+    formatTime(dateString) {
+      const date = new Date(dateString)
+      return date.toLocaleTimeString('sl-SI', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    },
+
+    // Testni podatki (odstrani ko API deluje)
+    // getMockMeals() {
+    //   return [
+    //     {
+    //       id: 1,
+    //       type: 'Zajtrk',
+    //       date: new Date().toISOString(),
+    //       totalCalories: 350,
+    //       foods: [
+    //         { name: 'Jajca', amount: 100, calories: 155 },
+    //         { name: 'Avokado', amount: 50, calories: 80 },
+    //         { name: 'Kruh', amount: 60, calories: 155 }
+    //       ]
+    //     },
+    //     {
+    //       id: 2,
+    //       type: 'Kosilo',
+    //       date: new Date().toISOString(),
+    //       totalCalories: 550,
+    //       foods: [
+    //         { name: 'Piščanec', amount: 150, calories: 330 },
+    //         { name: 'Riž', amount: 100, calories: 130 },
+    //         { name: 'Brokoli', amount: 80, calories: 27 }
+    //       ]
+    //     }
+    //   ]
+    // }
+  },
 }
 </script>
 
 <style scoped>
 .meals-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
-/* Header */
 .meals-header {
   background: white;
-  padding: 20px 40px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 20px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-h1 {
-  color: #2c3e50;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .back-btn {
-  padding: 10px 20px;
   background: #3498db;
   color: white;
   border: none;
+  padding: 12px 20px;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s;
+  font-size: 16px;
+  transition: all 0.3s ease;
 }
 
 .back-btn:hover {
   background: #2980b9;
+  transform: translateX(-2px);
 }
 
-.user-info {
-  color: #7f8c8d;
-  font-weight: 500;
-}
-
-/* Main content */
 .meals-main {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 30px auto;
   padding: 0 20px;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
 }
 
-/* Today section */
-.today-section,
-.stats-section {
+.card {
   background: white;
-  border-radius: 15px;
   padding: 25px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.date-display {
-  font-size: 1.2rem;
-  color: #3498db;
-  margin-bottom: 25px;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  text-align: center;
+.today-meals {
+  margin-top: 25px;
 }
 
-/* Calorie meter */
-.calorie-meter {
-  margin-bottom: 30px;
-}
-
-.meter-header {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
 }
 
-.meter-header h3 {
+.card-header h2 {
   margin: 0;
   color: #2c3e50;
 }
 
-.meter-percentage {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #2ecc71;
+.refresh-btn {
+  background: #2ecc71;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
 }
 
-.meter-bar {
-  height: 25px;
-  background: #ecf0f1;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 8px;
+.refresh-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
 }
 
-.meter-fill {
-  height: 100%;
-  background: linear-gradient(to right, #2ecc71, #3498db);
-  border-radius: 12px;
-  transition: width 0.5s ease;
+.refresh-btn:hover:not(:disabled) {
+  background: #27ae60;
 }
 
-.meter-fill.over-limit {
-  background: linear-gradient(to right, #e74c3c, #f39c12);
-}
-
-.meter-labels {
+.summary {
   display: flex;
-  justify-content: space-between;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  gap: 30px;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
 }
 
-/* Meals list */
-.meals-list {
-  margin-bottom: 30px;
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.label {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-bottom: 5px;
+}
+
+.value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.value.calories {
+  color: #e74c3c;
+}
+
+.loading,
+.no-meals {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 18px;
 }
 
 .no-meals {
-  text-align: center;
-  padding: 40px 20px;
   background: #f8f9fa;
   border-radius: 10px;
-  color: #7f8c8d;
+  border: 2px dashed #ddd;
 }
 
-.add-sample-btn {
-  margin-top: 15px;
-  padding: 10px 20px;
-  background: #3498db;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+.meals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.meal-item {
+.meal-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.meal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.meal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px;
-  margin-bottom: 10px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  transition: transform 0.3s;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
-.meal-item:hover {
-  transform: translateX(5px);
-  background: #f0f3f5;
+.meal-type {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meal-type .icon {
+  font-size: 24px;
+}
+
+.meal-type h3 {
+  margin: 0;
+  font-size: 18px;
 }
 
 .meal-info {
   display: flex;
-  align-items: center;
   gap: 20px;
-  flex: 1;
-}
-
-.meal-time {
-  font-weight: bold;
-  color: #3498db;
-  min-width: 60px;
-}
-
-.meal-name {
-  flex: 1;
-  color: #2c3e50;
-}
-
-.meal-calories {
-  font-weight: bold;
-  color: #e74c3c;
-}
-
-.remove-meal-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: #95a5a6;
-  transition: color 0.3s;
-}
-
-.remove-meal-btn:hover {
-  color: #e74c3c;
-}
-
-/* Add meal form */
-.add-meal-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.meal-input {
-  flex: 1;
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-}
-
-.calories-input {
-  max-width: 150px;
-}
-
-.add-btn {
-  padding: 12px 25px;
-  background: #2ecc71;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s;
-}
-
-.add-btn:hover {
-  background: #27ae60;
-}
-
-.quick-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.quick-btn {
-  padding: 10px;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-align: left;
-}
-
-.quick-btn:hover {
-  background: #3498db;
-  color: white;
-  border-color: #3498db;
-}
-
-/* Stats section */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 10px;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.stat-label {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-}
-
-/* Macros */
-.macro-item {
-  display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
 }
 
-.macro-name {
-  min-width: 140px;
-  color: #2c3e50;
-  font-weight: 500;
+.time,
+.calories {
+  font-size: 14px;
+  opacity: 0.9;
 }
 
-.macro-bar {
-  flex: 1;
-  height: 20px;
-  background: #ecf0f1;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.macro-fill {
-  height: 100%;
-  border-radius: 10px;
-}
-
-.macro-fill.protein {
-  width: 65%;
-  background: linear-gradient(to right, #3498db, #2980b9);
-}
-
-.macro-fill.carbs {
-  width: 80%;
-  background: linear-gradient(to right, #2ecc71, #27ae60);
-}
-
-.macro-fill.fats {
-  width: 45%;
-  background: linear-gradient(to right, #f39c12, #e67e22);
-}
-
-.macro-value {
-  min-width: 50px;
-  text-align: right;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-/* Footer */
-.meals-footer {
-  max-width: 1200px;
-  margin: 30px auto;
+.meal-foods {
   padding: 20px;
-  text-align: center;
+  background: white;
+}
+
+.meal-foods h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.meal-foods ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.food-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.food-name {
+  color: #2c3e50;
+}
+
+.food-details {
   color: #7f8c8d;
+  font-size: 14px;
+}
+
+.meal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #f8f9fa;
   border-top: 1px solid #eee;
 }
 
-.reset-btn {
-  padding: 12px 25px;
+.meal-date {
+  font-size: 14px;
+  color: #7f8c8d;
+}
+
+.delete-btn {
   background: #e74c3c;
   color: white;
   border: none;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   cursor: pointer;
-  font-weight: 600;
-  margin-bottom: 15px;
-  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
 }
 
-.reset-btn:hover {
+.delete-btn:hover {
   background: #c0392b;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .meals-main {
-    grid-template-columns: 1fr;
-  }
-  
-  .header-content {
+.error {
+  color: #e74c3c;
+  text-align: center;
+  padding: 15px;
+  background: #ffeaea;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .meals-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
   }
-  
-  .add-meal-form {
+
+  .meal-header {
     flex-direction: column;
+    gap: 10px;
+    text-align: center;
   }
-  
-  .calories-input {
-    max-width: 100%;
+
+  .meal-info {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .summary {
+    flex-direction: column;
+    gap: 15px;
   }
 }
 </style>

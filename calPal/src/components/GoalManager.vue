@@ -8,9 +8,9 @@
             {{ goalStatusText[goal.status] }}
           </span>
         </div>
-        
+
         <p class="goal-description">{{ goal.description }}</p>
-        
+
         <div class="goal-progress">
           <div class="progress-text">
             <span class="current">{{ goal.current }}</span>
@@ -19,14 +19,14 @@
             <span class="percentage">({{ goal.percentage }}%)</span>
           </div>
           <div class="progress-bar">
-            <div 
-              class="progress-fill" 
+            <div
+              class="progress-fill"
               :style="{ width: goal.percentage + '%' }"
-              :class="{ 'completed': goal.percentage >= 100 }"
+              :class="{ completed: goal.percentage >= 100 }"
             ></div>
           </div>
         </div>
-        
+
         <div class="goal-actions">
           <button @click="updateProgress(goal.id, 10)" class="action-btn add-btn">
             + Napredek
@@ -34,18 +34,21 @@
           <button @click="updateProgress(goal.id, -10)" class="action-btn remove-btn">
             - Zmanjšaj
           </button>
-          <button @click="editGoal(goal.id)" class="action-btn edit-btn">
-            ✏️ Uredi
-          </button>
+          <button @click="editGoal(goal.id)" class="action-btn edit-btn">✏️ Uredi</button>
         </div>
       </div>
     </div>
-    
+
     <div class="add-goal-section">
       <h3>➕ Dodaj nov cilj</h3>
       <div class="add-goal-form">
-        <input v-model="newGoal.name" placeholder="Ime cilja" class="goal-input">
-        <input v-model="newGoal.target" type="number" placeholder="Ciljna vrednost" class="goal-input">
+        <input v-model="newGoal.name" placeholder="Ime cilja" class="goal-input" />
+        <input
+          v-model="newGoal.target"
+          type="number"
+          placeholder="Ciljna vrednost"
+          class="goal-input"
+        />
         <select v-model="newGoal.unit" class="goal-input">
           <option value="kcal">kcal</option>
           <option value="kg">kg</option>
@@ -72,7 +75,7 @@ export default {
           current: 1250,
           target: 2000,
           unit: 'kcal',
-          status: 'in-progress'
+          status: 'in-progress',
         },
         {
           id: 2,
@@ -82,7 +85,7 @@ export default {
           current: 65.2,
           target: 60.0,
           unit: 'kg',
-          status: 'in-progress'
+          status: 'in-progress',
         },
         {
           id: 3,
@@ -92,71 +95,70 @@ export default {
           current: 3,
           target: 5,
           unit: 'krat',
-          status: 'in-progress'
-        }
+          status: 'in-progress',
+        },
       ],
       newGoal: {
         name: '',
         target: '',
-        unit: 'kcal'
+        unit: 'kcal',
       },
       goalStatusText: {
         'not-started': 'Ni začeto',
         'in-progress': 'V teku',
-        'completed': 'Dokončano'
-      }
+        completed: 'Dokončano',
+      },
     }
   },
   computed: {
     calculatedGoals() {
-      return this.goals.map(goal => {
+      return this.goals.map((goal) => {
         const percentage = Math.min(Math.round((goal.current / goal.target) * 100), 100)
-        const status = percentage >= 100 ? 'completed' : 
-                      goal.current > 0 ? 'in-progress' : 'not-started'
-        
+        const status =
+          percentage >= 100 ? 'completed' : goal.current > 0 ? 'in-progress' : 'not-started'
+
         return {
           ...goal,
           percentage,
-          status
+          status,
         }
       })
-    }
+    },
   },
   methods: {
     updateProgress(goalId, amount) {
-      const goal = this.goals.find(g => g.id === goalId)
+      const goal = this.goals.find((g) => g.id === goalId)
       if (goal) {
         goal.current = Math.max(0, goal.current + amount)
-        
+
         // Avtomatsko označi kot dokončano
         if (goal.current >= goal.target) {
           goal.current = goal.target
         }
       }
     },
-    
+
     editGoal(goalId) {
-      const goal = this.goals.find(g => g.id === goalId)
+      const goal = this.goals.find((g) => g.id === goalId)
       if (goal) {
         const newName = prompt('Novo ime cilja:', goal.name)
         const newTarget = prompt('Nova ciljna vrednost:', goal.target)
-        
+
         if (newName && newTarget) {
           goal.name = newName
           goal.target = parseFloat(newTarget)
         }
       }
     },
-    
+
     addGoal() {
       if (!this.newGoal.name.trim() || !this.newGoal.target) {
         alert('Prosimo, vnesite ime in ciljno vrednost!')
         return
       }
-      
-      const newId = this.goals.length > 0 ? 
-                   Math.max(...this.goals.map(g => g.id)) + 1 : 1
-      
+
+      const newId = this.goals.length > 0 ? Math.max(...this.goals.map((g) => g.id)) + 1 : 1
+
       this.goals.push({
         id: newId,
         name: this.newGoal.name,
@@ -165,15 +167,15 @@ export default {
         current: 0,
         target: parseFloat(this.newGoal.target),
         unit: this.newGoal.unit,
-        status: 'not-started'
+        status: 'not-started',
       })
-      
+
       // Reset forma
       this.newGoal.name = ''
       this.newGoal.target = ''
       this.newGoal.unit = 'kcal'
-    }
-  }
+    },
+  },
 }
 </script>
 
@@ -195,7 +197,7 @@ export default {
   background: white;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
 
 .goal-header {

@@ -3,38 +3,34 @@
     <div class="login-card">
       <h1>🍎 Calorie Tracker</h1>
       <p class="subtitle">Spremljajte vaše kalorije in dosegajte cilje</p>
-      
+
       <div class="login-form">
         <!-- Za zdaj samo preprosta prijava -->
         <div class="input-group">
           <label>Uporabniško ime</label>
-          <input 
-            v-model="username" 
-            type="text" 
+          <input
+            v-model="username"
+            type="text"
             placeholder="Vnesite uporabniško ime"
             class="login-input"
-          >
+          />
         </div>
-        
+
         <div class="input-group">
           <label>Geslo</label>
-          <input 
-            v-model="password" 
-            type="password" 
+          <input
+            v-model="password"
+            type="password"
             placeholder="Vnesite geslo"
             class="login-input"
-          >
+          />
         </div>
-        
-        <button @click="login" class="login-btn">
-          🔐 Prijava
-        </button>
-        
-        <p class="demo-note">
-          <strong>Demo:</strong> Uporabite poljubno ime in geslo
-        </p>
+
+        <button @click="login" class="login-btn">🔐 Prijava</button>
+
+        <p class="demo-note"><strong>Demo:</strong> Uporabite poljubno ime in geslo</p>
       </div>
-      
+
       <div class="test-account">
         <h3>🔄 Hitri test:</h3>
         <button @click="useTestAccount" class="test-btn">
@@ -51,7 +47,7 @@ export default {
   data() {
     return {
       username: '',
-      password: ''
+      password: '',
     }
   },
   methods: {
@@ -60,24 +56,24 @@ export default {
         alert('Prosimo, vnesite uporabniško ime in geslo!')
         return
       }
-      
+
       // Shrani v localStorage (za demo)
       localStorage.setItem('currentUser', this.username)
-      
+
       // Preusmeri na dashboard
       this.$router.push('/dashboard')
     },
-    
+
     useTestAccount() {
       this.username = 'ana123'
       this.password = 'demo123'
-      
+
       // Samodejna prijava po 500ms
       setTimeout(() => {
         this.login()
       }, 500)
-    }
-  }
+    },
+  },
 }
 </script>
 
@@ -149,7 +145,9 @@ h1 {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
   margin-top: 10px;
 }
 
