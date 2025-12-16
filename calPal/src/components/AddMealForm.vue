@@ -102,56 +102,62 @@ export default {
       error: null,
       successMessage: null,
       showDropdown: false,
-      searchTimeout: null
+      searchTimeout: null,
     }
   },
   computed: {
-    totalSelectedCalories() {
+    // Izračunaj skupne kalorije obroka
+    totalMealCalories() {
       return this.selectedFoods.reduce((sum, food) => sum + food.calories, 0)
     },
+
+    // Posamezne kalorije za prikaz (če še potrebuješ)
+    totalSelectedCalories() {
+      return this.totalMealCalories
+    },
+
     canSaveMeal() {
       return this.mealType && this.selectedFoods.length > 0
-    }
+    },
   },
   methods: {
     onSearchInput() {
       this.showDropdown = this.search.length >= 2
-      
+
       // Debounce search
       if (this.searchTimeout) {
         clearTimeout(this.searchTimeout)
       }
-      
+
       this.searchTimeout = setTimeout(() => {
         this.performSearch()
       }, 300)
     },
-    
+
     async performSearch() {
       if (this.search.length < 2) {
         this.foods = []
         return
       }
-      
+
       try {
         console.log('🔍 Searching API for:', this.search)
-        
+
         // Testiraj obe poti
         const res = await mealApi.get('/findFood', {
-          params: { ime: this.search }
+          params: { ime: this.search },
         })
-        
+
         console.log('✅ API Response:', res.data)
         this.foods = res.data || []
         this.error = null
-        
       } catch (err) {
         console.error('❌ API Error:', err)
         console.error('Error response:', err.response)
-        
+
         this.foods = []
         this.error = 'Napaka pri iskanju hrane'
-        
+
         // // Debug - dodaj testne podatke
         // if (process.env.NODE_ENV === 'development') {
         //   this.foods = [
@@ -161,7 +167,7 @@ export default {
         // }
       }
     },
-    
+
     selectFood(food) {
       console.log('👉 Selected food:', food)
       this.selectedFood = { ...food }
@@ -170,78 +176,88 @@ export default {
       // NE: this.search = '' // To povzroči infinite loop!
       this.foods = [] // samo počisti dropdown
     },
-    
+
     addFoodToMeal() {
       if (!this.foodAmount || this.foodAmount <= 0) {
         this.error = 'Vnesi veljavno količino'
         return
       }
-      
+
       if (!this.selectedFood) {
         this.error = 'Najprej izberi hrano'
         return
       }
-      
+
       const calories = Math.round((this.selectedFood.calories * this.foodAmount) / 100)
-      
+
       this.selectedFoods.push({
         id: this.selectedFood.id,
         //foodName: this.selectedFood.foodName, // Shrani kot 'name' za prikaz
         foodName: this.selectedFood.foodName, // Ohrani original
         amount: this.foodAmount,
-        calories: calories
+        calories: calories,
       })
-      
+
       console.log('➕ Added food:', this.selectedFoods[this.selectedFoods.length - 1])
-      
+
       this.selectedFood = null
       this.foodAmount = 100
       this.search = ''
       this.error = null
     },
-    
+
     removeFood(index) {
       this.selectedFoods.splice(index, 1)
     },
-    
+
     async saveMeal() {
       this.error = null
       this.successMessage = null
-      
+
       if (!this.canSaveMeal) {
         this.error = 'Izberi tip obroka in dodaj vsaj eno hrano'
         return
       }
-      
+
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0') // 1 → "01"
+      const day = String(now.getDate()).padStart(2, '0')
+      const hours = String(now.getHours()).padStart(2, '0')
+      const minutes = String(now.getMinutes()).padStart(2, '0')
+      const seconds = String(now.getSeconds()).padStart(2, '0')
+
+      const dateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+
       // Pravilna struktura za tvoj backend
       const payload = {
         mealType: this.mealType.charAt(0), // Samo prva črka: 'Z', 'K', 'V', 'P'
-        dateTime: new Date().toISOString(),
-        foods: this.selectedFoods.map(food => ({
+        dateTime: dateTime,
+        calories: this.totalMealCalories,
+        foods: this.selectedFoods.map((food) => ({
           foodId: food.id,
-          amount: food.amount
-        }))
+          amount: food.amount,
+        })),
       }
-      
+      console.log('total calories', this.totalCals)
       console.log('💾 Saving meal:', payload)
-      
+
       try {
         const res = await mealApi.post('/addMeal', payload)
-        
+
         console.log('✅ Meal saved:', res.data)
         this.successMessage = '✅ Obrok uspešno dodan!'
-        
+
         setTimeout(() => {
           this.resetForm()
           this.$emit('meal-added')
         }, 1500)
-        
       } catch (err) {
         console.error('❌ Save error:', err)
         this.error = 'Napaka pri shranjevanju obroka'
       }
     },
-    
+
     resetForm() {
       this.mealType = ''
       this.search = ''
@@ -252,16 +268,15 @@ export default {
       this.error = null
       this.successMessage = null
       this.showDropdown = false
-      
+
       if (this.searchTimeout) {
         clearTimeout(this.searchTimeout)
         this.searchTimeout = null
       }
-    }
-  }
+    },
+  },
 }
 </script>
-
 
 <style scoped>
 .add-meal-form {
@@ -478,4 +493,3 @@ h4 {
   color: #2c3e50;
 }
 </style>
-

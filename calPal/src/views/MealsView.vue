@@ -9,6 +9,13 @@
     <main class="meals-main">
       <!-- AddMealForm -->
       <AddMealForm @meal-added="loadMeals" />
+      <EditMealForm
+        v-if="showEditForm"
+        :show="showEditForm"
+        :meal="editingMeal"
+        @close="closeEditForm"
+        @meal-updated="handleMealUpdated"
+      />
 
       <!-- Današnji obroki -->
       <section class="card today-meals">
@@ -27,7 +34,7 @@
           </div>
           <div class="summary-item">
             <span class="label">Skupne kalorije:</span>
-            <span class="value calories">{{ totalCalories }} kcal</span>
+            <span class="value calories">{{ caloriesOfTheDay }} kcal</span>
           </div>
         </div>
 
@@ -42,12 +49,11 @@
           <div v-for="meal in meals" :key="meal.id" class="meal-card">
             <div class="meal-header">
               <div class="meal-type">
-                <span class="icon">{{ getMealIcon(meal.type) }}</span>
-                <h3>{{ meal.type }}</h3>
+                <h3>{{ getFullMealType(meal.mealType) }}</h3>
               </div>
               <div class="meal-info">
-                <span class="time">🕐 {{ formatTime(meal.date) }}</span>
-                <span class="calories">🔥 {{ meal.totalCalories }} kcal</span>
+                <span class="time">🕐 {{ formatTime(meal.dateTime) }}</span>
+                <span class="calories">🔥 {{ meal.calories }} kcal</span>
               </div>
             </div>
 
@@ -56,15 +62,19 @@
               <ul>
                 <li v-for="(food, index) in meal.foods" :key="index" class="food-item">
                   <span class="food-name">{{ food.foodName }}</span>
+                  <!-- Uporabite food.amount in food.calories iz API-ja -->
                   <span class="food-details">{{ food.amount }}g = {{ food.calories }} kcal</span>
                 </li>
               </ul>
             </div>
 
             <div class="meal-footer">
-              <span class="meal-date">📅 {{ formatDate(meal.date) }}</span>
+              <span class="meal-date">📅 {{ formatDate(meal.dateTime) }}</span>
+              <button @click="openEditForm(meal)" class="update-btn" title="Posodobi obrok">
+                Uredi
+              </button>
               <button @click="deleteMeal(meal.id)" class="delete-btn" title="Izbriši obrok">
-                🗑️
+                Izbriši
               </button>
             </div>
           </div>
@@ -76,73 +86,107 @@
 
 <script>
 import AddMealForm from '@/components/AddMealForm.vue'
+import EditMealForm from '@/components/EditMealForm.vue'
 import { mealApi } from '@/api'
 
 export default {
   name: 'MealsView',
-  components: { AddMealForm },
+  components: { AddMealForm, EditMealForm },
   data() {
     return {
       meals: [],
       loading: false,
       error: null,
+      editingMeal: null,
+      showEditForm: false,
     }
   },
   mounted() {
     this.loadMeals()
   },
   computed: {
-    totalCalories() {
-      return this.meals.reduce((sum, meal) => sum + meal.totalCalories, 0)
+    caloriesOfTheDay() {
+      return this.meals.reduce((total, meal) => {
+        // Preverimo, če calories obstaja in je število
+        const mealCalories = meal.calories
+        if (mealCalories !== null && mealCalories !== undefined) {
+          return total + mealCalories
+        }
+        return total
+      }, 0)
     },
   },
   methods: {
     goToDashboard() {
       this.$router.push('/dashboard')
     },
+    getFullMealType(c) {
+      if (c == 'Z') {
+        return 'Zajtrk'
+      } else if (c == 'K') {
+        return 'Kosilo'
+      } else if (c == 'V') {
+        return 'Vecerja'
+      } else {
+        return 'Prigrizek'
+      }
+    },
+
+    openEditForm(meal) {
+      console.log('odpiram editing mode')
+      this.editingMeal = meal
+      this.showEditForm = true
+    },
+
+    closeEditForm() {
+      this.showEditForm = false
+      this.editingMeal = null
+    },
+
+    handleMealUpdated() {
+      this.loadMeals()
+      this.closeEditForm()
+    },
 
     async loadMeals() {
       this.loading = true
       this.error = null
       try {
-        // Po potrebi prilagodi API pot
-        console.log("v view bo klicau api")
         const res = await mealApi.get('/mealsToday')
         this.meals = res.data
-        
       } catch (err) {
         console.error('Napaka pri nalaganju obrokov:', err)
         this.error = 'Napaka pri nalaganju obrokov'
         // Za testiranje - dodaj testne podatke če API še ne deluje
-        this.meals = this.getMockMeals()
       } finally {
         this.loading = false
       }
     },
 
-    async deleteMeal(mealId) {
+    async deleteMeal(id) {
       if (!confirm('Ste prepričani, da želite izbrisati ta obrok?')) {
         return
       }
-
       try {
-        await mealApi.delete(`/api/meals/${mealId}`)
+        const response = await mealApi.delete(`deleteMeal?id=${id}`)
         this.loadMeals() // Osveži seznam
       } catch (err) {
         console.error('Napaka pri brisanju obroka:', err)
-        alert('Napaka pri brisanju obroka')
+        console.error('Error response:', err.response)
+        alert('Napaka pri brisanju obroka: ' + (err.response?.data || err.message))
       }
     },
 
-    getMealIcon(type) {
-      const icons = {
-        Zajtrk: '🍳',
-        Kosilo: '🍲',
-        Večerja: '🍽️',
-        Prigrizek: '🍎',
-      }
-      return icons[type] || '🍴'
-    },
+    // async updateMeal(id){
+    //   try {
+    //     const response = await mealApi.update(`updateMeal?id=${id}`)
+    //     this.loadMeals() // Osveži seznam
+    //   } catch (err) {
+    //     console.error('Napaka pri brisanju obroka:', err);
+    //     console.error('Error response:', err.response);
+    //     alert('Napaka pri brisanju obroka: ' + (err.response?.data || err.message))
+    //   }
+    // },
 
     formatDate(dateString) {
       const date = new Date(dateString)
@@ -160,34 +204,6 @@ export default {
         minute: '2-digit',
       })
     },
-
-    // Testni podatki (odstrani ko API deluje)
-    // getMockMeals() {
-    //   return [
-    //     {
-    //       id: 1,
-    //       type: 'Zajtrk',
-    //       date: new Date().toISOString(),
-    //       totalCalories: 350,
-    //       foods: [
-    //         { name: 'Jajca', amount: 100, calories: 155 },
-    //         { name: 'Avokado', amount: 50, calories: 80 },
-    //         { name: 'Kruh', amount: 60, calories: 155 }
-    //       ]
-    //     },
-    //     {
-    //       id: 2,
-    //       type: 'Kosilo',
-    //       date: new Date().toISOString(),
-    //       totalCalories: 550,
-    //       foods: [
-    //         { name: 'Piščanec', amount: 150, calories: 330 },
-    //         { name: 'Riž', amount: 100, calories: 130 },
-    //         { name: 'Brokoli', amount: 80, calories: 27 }
-    //       ]
-    //     }
-    //   ]
-    // }
   },
 }
 </script>
@@ -430,18 +446,50 @@ export default {
   background: #e74c3c;
   color: white;
   border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  padding: 10px 15px;
+  border-radius: 6px;
   cursor: pointer;
-  display: flex;
+  font-size: 14px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  transition: background-color 0.3s;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s;
+  gap: 5px;
 }
 
 .delete-btn:hover {
   background: #c0392b;
+}
+
+.delete-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.update-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  transition: background-color 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.update-btn:hover {
+  background: #2980b9;
+}
+
+.update-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
 }
 
 .error {
