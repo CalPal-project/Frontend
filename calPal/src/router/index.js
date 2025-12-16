@@ -20,6 +20,12 @@ const routes = [
     name: 'Meals',
     component: () => import('@/views/MealsView.vue'),
   },
+  {
+    path: '/mealshistory',
+    name: 'MealsHistory',
+    component: () => import('@/views/MealsHistory.vue'),
+  },
+
 ]
 
 const router = createRouter({

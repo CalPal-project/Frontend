@@ -50,15 +50,19 @@
       <div class="navigation-section">
         <h2>🚀 Hitra navigacija</h2>
         <div class="nav-buttons">
+          <button @click="goToMealTracking" class="nav-btn meal-btn">
+            <span class="btn-icon">🍽️</span>
+            <span class="btn-text">Sledenje obrokom</span>
+            <span class="btn-arrow">→</span>
+          </button>
           <button @click="goToGoalManagement" class="nav-btn goal-btn">
             <span class="btn-icon">🎯</span>
             <span class="btn-text">Upravljanje ciljev</span>
             <span class="btn-arrow">→</span>
           </button>
-
-          <button @click="goToMealTracking" class="nav-btn meal-btn">
+          <button @click="goToMealHistory" class="nav-btn history-btn">
             <span class="btn-icon">🍽️</span>
-            <span class="btn-text">Sledenje obrokom</span>
+            <span class="btn-text">Pregled prejšnjih obrokov</span>
             <span class="btn-arrow">→</span>
           </button>
         </div>
@@ -141,6 +145,9 @@ export default {
       // Pojdi na ločeno stran za meal tracking
       this.$router.push('/meals')
     },
+    goToMealHistory(){
+      this.$router.push('/mealshistory')
+    }
   },
 }
 </script>
@@ -286,12 +293,17 @@ h2 {
   text-align: left;
 }
 
+.meal-btn {
+  background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+  color: #2c3e50;
+}
+
 .goal-btn {
   background: linear-gradient(to right, #ff9a9e, #fad0c4);
   color: #2c3e50;
 }
 
-.meal-btn {
+.history-btn{
   background: linear-gradient(to right, #a1c4fd, #c2e9fb);
   color: #2c3e50;
 }

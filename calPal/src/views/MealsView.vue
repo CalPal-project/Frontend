@@ -3,6 +3,7 @@
     <!-- Header -->
     <header class="meals-header">
       <h1>🍽️ Sledenje obrokom</h1>
+      <button @click="goToMealHistory" class="back-btn">Pregled Obrokov</button>
       <button @click="goToDashboard" class="back-btn">← Nazaj na Dashboard</button>
     </header>
 
@@ -120,6 +121,11 @@ export default {
     goToDashboard() {
       this.$router.push('/dashboard')
     },
+
+    goToMealHistory(){
+      this.$router.push('/mealshistory')
+    },
+    
     getFullMealType(c) {
       if (c == 'Z') {
         return 'Zajtrk'
