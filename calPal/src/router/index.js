@@ -25,6 +25,11 @@ const routes = [
     name: 'MealsHistory',
     component: () => import('@/views/MealsHistory.vue'),
   },
+  {
+    path: '/goalmanager',
+    name: 'GoalManager',
+    component: () => import('@/views/GoalManagerView.vue'),
+  }
 
 ]
 

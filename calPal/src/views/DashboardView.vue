@@ -68,11 +68,11 @@
       </div>
 
       <!-- Goal Manager komponenta (prikazana tukaj) -->
-      <div v-if="showGoalManager" class="goal-manager-section">
+      <!-- <div v-if="showGoalManager" class="goal-manager-section">
         <h2>🎯 Upravljanje ciljev</h2>
         <GoalManager />
         <button @click="hideGoalManager" class="close-btn">✕ Zapri upravljanje ciljev</button>
-      </div>
+      </div> -->
 
       <!-- Zadnja aktivnost -->
       <div class="activity-section">
@@ -174,7 +174,8 @@
 </template>
 
 <script>
-import GoalManager from '@/components/GoalManager.vue'
+import GoalManager from '@/views/GoalManagerView.vue'
+import EditGoalForm from '@/components/EditGoalForm.vue';
 import { mealApi } from '@/api'
 
 export default {
@@ -225,12 +226,7 @@ export default {
     },
 
     goToGoalManagement() {
-      this.showGoalManager = true
-      setTimeout(() => {
-        document.querySelector('.goal-manager-section')?.scrollIntoView({
-          behavior: 'smooth',
-        })
-      }, 100)
+      this.$router.push('/goalmanager')
     },
     
     async loadLastMeal() {
