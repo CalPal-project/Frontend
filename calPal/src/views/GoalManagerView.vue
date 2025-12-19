@@ -112,7 +112,7 @@
               <span class="goal-date">🔄 Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>
               <div class="action-buttons">
                 <button 
-                  @click="updateProgress(goal.id, 10)" 
+                  @click="updateProgress(goal.id)" 
                   class="action-btn add-btn"
                   title="Dodaj napredek"
                 >

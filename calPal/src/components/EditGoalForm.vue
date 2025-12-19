@@ -140,7 +140,6 @@
                 <input
                   type="number"
                   v-model="formData.kms"
-                  step="0.1"
                   min="1"
                   max="400"
                   required
@@ -158,7 +157,6 @@
                   v-model="formData.steps"
                   min="1000"
                   max="50000"
-                  step="100"
                   required
                   class="form-control"
                   placeholder="Npr. 10000"
@@ -355,7 +353,7 @@ export default {
     
     getFitnessTypeText(fitnessType) {
       switch(fitnessType) {
-        case 'F': return 'Telovadba (kratov na teden)'
+        case 'F': return 'Telovadba (telovadb na teden)'
         case 'R': return 'Tek/hoja (km na teden)'
         case 'S': return 'Koraki (korakov na dan)'
         default: return 'Neznano'
@@ -451,25 +449,11 @@ export default {
       
       // Validacija fitnesa
       if (this.formData.goalType === 'F') {
-        switch(this.formData.fitnessType) {
-          case 'F':
-            if (!this.formData.weeklyFitness || this.formData.weeklyFitness < 1 || this.formData.weeklyFitness > 7) {
-              this.error = 'Tedenske vadbe morajo biti med 1 in 7 kratov.'
-              return false
-            }
-            break
-          case 'R':
+        if(this.formData.fitnessType == 'R') {
             if (!this.formData.kms || this.formData.kms < 1) {
               this.error = 'Kilometri morajo biti pozitivno število.'
               return false
             }
-            break
-          case 'S':
-            if (!this.formData.steps || this.formData.steps < 1000) {
-              this.error = 'Koraki morajo biti vsaj 1000 na dan.'
-              return false
-            }
-            break
         }
       }
       
@@ -488,9 +472,8 @@ export default {
       }
       
       try {
-        // Pripravi podatke za API - upoštevaj tvojo API strukturo
         const goalData = {
-          //id: this.goal.id, // Obvezno potrebujemo ID za posodobitev
+          //id: this.goal.id 
           goalTitle: this.formData.goalTitle,
           goalType: this.formData.goalType,
           status: this.formData.status,
@@ -498,7 +481,6 @@ export default {
           dateEnd: this.formData.dateEnd || null
         }
         
-        // Dodaj specifična polja glede na tip cilja
         switch(this.formData.goalType) {
           case 'F':
             goalData.fitnessType = this.formData.fitnessType
@@ -521,8 +503,7 @@ export default {
         
         console.log('Sending update data:', goalData)
         
-        // API klic za posodobitev - prilagodi tvoj endpoint
-        // Prilagodi glede na tvoj API: /updateGoal, /goals/{id}, itd.
+        
         console.log("UREjamo: ", goalData)
         const response = await goalApi.put(`/updateGoal?id=${this.goal.id}`, goalData)
         
