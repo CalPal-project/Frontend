@@ -354,7 +354,7 @@
                       <label for="currWeight">Trenutna teža (kg):</label>
                       <input
                         id="currWeight"
-                        v-model="newGoal.currentWeight"
+                        v-model="newGoal.currWeight"
                         type="number"
                         step="0.1"
                         min="30"
@@ -414,7 +414,7 @@
                     id="dateStart"
                     v-model="newGoal.dateStart"
                     type="date"
-                    :min="minDate"
+                   
                     class="form-control"
                     required
                   />
@@ -426,7 +426,7 @@
                     id="dateEnd"
                     v-model="newGoal.dateEnd"
                     type="date"
-                    :min="newGoal.dateStart || minDate"
+                    :min="newGoal.dateStart"
                     class="form-control"
                   />
                 </div>
@@ -472,7 +472,7 @@ export default {
       isLoading: false,
       showAddGoalForm: false,
       currentStep: 1,
-      minDate: new Date().toISOString().split('T')[0],
+      //minDate: new Date().toISOString().split('T')[0],
       newGoal: {
         goalTitle: '',
         goalType: '',
@@ -502,7 +502,7 @@ export default {
       return this.goals.filter(g => g.status === 'in progress').length;
     },
     completedGoalsCount() {
-      return this.goals.filter(g =>g.status === 'done').length;
+      return this.goals.filter(g =>g.status === 'completed').length;
     },
     hasCalorieGoal() {
       return this.goals.some(g => g.goalType === 'C' && (g.status === 'in progress'));
@@ -547,8 +547,12 @@ export default {
       this.selectedGoal = goal;
       this.showEditGoalModal = true;
     },
-    addExercise(goalId){
+    async addExercise(goald){
       //za updejtanje telovadb (+1)
+      console.log("goalid:", goald)
+      const response = await goalApi.put(`/updateProgressFitness?id=${goald}&num=1`);
+      console.log("fitnes updated");
+      await this.loadAllGoals();
     },
     
     updateProgress(goal) {
@@ -590,7 +594,7 @@ export default {
         'in progress': 'V teku',
         'completed': 'Dokončan',
       };
-      return statusMap[status] || status;
+      return statusMap[status] || status; 
     },
     
     getGoalDescription(goal) {
@@ -603,7 +607,7 @@ export default {
             default: return 'Fitnes cilj';
           }
         case 'C':
-          return `${goal.cals} Kakšen naj bo vaš dnevni kalorični vnos`;
+          return `${goal.cals} kcal v dnevu`;
         case 'W':
           return `Od ${goal.currentWeight || 0}kg do ${goal.goalWeight}kg`;
         default:
@@ -612,7 +616,6 @@ export default {
     },
     
     getCurrentValue(goal) {
-      // TODO: Implementiraj dejanske trenutne vrednosti
       switch(goal.goalType) {
         case 'F': 
           const ftype = goal.fitnessType;
@@ -637,7 +640,7 @@ export default {
           switch(goal.fitnessType) {
             case 'F': return goal.weeklyFitness;
             case 'R': return goal.kms;
-            case 'S': return goal.steos;
+            case 'S': return goal.steps;
             default: return 0;
           }
         case 'C': return goal.cals;
@@ -660,21 +663,23 @@ export default {
         default: return '';
       }
     },
-    
     calculatePercentage(goal) {
       const current = this.getCurrentValue(goal);
       const target = this.getTargetValue(goal) || 1;
       
-      // Za težo posebna logika
-      if (goal.goalType === 'W' && goal.currWeight && goal.goalWeight) {
-        const startWeight = goal.currWeight;
-        const targetWeight = goal.goalWeight;
-        const progress = Math.abs(current - startWeight);
-        const total = Math.abs(targetWeight - startWeight);
-        return total > 0 ? Math.min(Math.round((progress / total) * 100), 100) : 0;
-      }
+      if (current === target) return 100
+      if (target === 0) return 0
       
-      return target > 0 ? Math.min(Math.round((current / target) * 100), 100) : 0;
+      if (current > target) {
+        const progress = ((current - target) / current) * 100
+        //console.log("percantage1: ", Math.min(Math.round(progress), 100))
+        return Math.min(Math.round(progress), 100)
+      }
+      else {
+        const progress = (current / target) * 100
+        //console.log("percantage2:", Math.min(Math.round(progress), 100))
+        return Math.min(Math.round(progress), 100)
+      }
     },
     
     formatDate(dateString) {
@@ -693,41 +698,9 @@ export default {
       try {
         const response = await goalApi.get('/allGoals');
         this.goals = response.data || [];
+
         for (const goal of this.goals) {
           console.log("goal loaded:", goal)
-          const type = goal.goalType;
-          if(type == 'F'){
-            const ftype = goal.fitnessType;
-            if(ftype == 'F'){
-              if(goal.weeklyFitness === goal.weeklyFitnessDone){
-                //completed
-                await goalApi.put(`/complete?id=${goal.id}`);
-              }
-            }
-            else if(ftype == 'R'){
-              if(goal.kms === goal.kmsDone){
-                //completed
-                await goalApi.put(`/complete?id=${goal.id}`);
-              }
-            }
-            else if(ftype == 'S'){
-              if(goal.steps === goal.stepsDone)
-              //completed
-            await goalApi.put(`/complete?id=${goal.id}`);
-            }
-          }
-          else if(type == 'W'){
-            if(goal.currWeight === goal.goalWeight){
-              //completed
-              await goalApi.put(`/complete?id=${goal.id}`);
-            }
-          }
-          else if(type == 'C'){
-            if(goal.cals === goal.eatenCals){
-              //competed
-              await goalApi.put(`/complete?id=${goal.id}`);
-            }
-          }
         }
       } catch (error) {
         console.error('Napaka pri nalaganju ciljev:', error);
@@ -765,10 +738,13 @@ export default {
             goalData.fitnessType = this.newGoal.fitnessType;
             if (this.newGoal.fitnessType === 'F') {
               goalData.weeklyFitness = this.newGoal.weeklyFitness;
+              goalData.weeklyFitnessDone = 0;
             } else if (this.newGoal.fitnessType === 'R') {
               goalData.kms = this.newGoal.kms;
+              goalData.kmsDone = 0;
             } else if (this.newGoal.fitnessType === 'S') {
               goalData.steps = this.newGoal.steps;
+              goalData.stepsDone = 0;
             }
             break;
           case 'C':
