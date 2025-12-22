@@ -14,6 +14,14 @@
         @close="showEditGoalModal = false"
         @goal-updated="loadAllGoals"
       />
+      <add-progress-form
+        v-if="showUpdateGoal"
+        :goal="updatingGoal"
+        :show="showUpdateGoal"
+        @close="closeUpdateModal"
+        @progress-added="handleProgressAdded"
+      />
+      
 
       <!-- Današnji cilji -->
       <section class="card today-goals">
@@ -109,15 +117,25 @@
 
             <!-- Akcije -->
             <div class="goal-actions">
-              <span class="goal-date">🔄 Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>
+              <span class="goal-date">🔄 Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>              
               <div class="action-buttons">
                 <button 
-                  @click="updateProgress(goal.id)" 
+                  v-if="!(goal.goalType === 'F' && goal.fitnessType === 'F')"
+                  @click="updateProgress(goal)" 
                   class="action-btn add-btn"
                   title="Dodaj napredek"
                 >
                   Dodaj napredek
                 </button>
+                <button 
+                  v-if="goal.goalType === 'F' && goal.fitnessType === 'F'"
+                  @click="addExercise(goal.id)"
+                  class="action-btn add-btn"
+                  title="Dodaj telovadbo"
+                >
+                  Dodaj telovadbo
+                </button>
+                
                 <button 
                   @click="openEditGoal(goal)" 
                   class="action-btn edit-btn"
@@ -336,7 +354,7 @@
                       <label for="currWeight">Trenutna teža (kg):</label>
                       <input
                         id="currWeight"
-                        v-model="newGoal.currWeight"
+                        v-model="newGoal.currentWeight"
                         type="number"
                         step="0.1"
                         min="30"
@@ -435,16 +453,20 @@
 <script>
 import { goalApi } from '@/api';
 import EditGoalForm from '@/components/EditGoalForm.vue';
+import AddProgressForm from '@/components/AddProgressForm.vue';
 
 export default {
   components: {
-    EditGoalForm
+    EditGoalForm,
+    AddProgressForm
   },
   name: 'GoalManager',
   data() {
     return {
       showEditGoalModal: false,
+      showUpdateGoal: false,
       selectedGoal: null,
+      updatingGoal: null,
 
       goals: [],
       isLoading: false,
@@ -525,6 +547,33 @@ export default {
       this.selectedGoal = goal;
       this.showEditGoalModal = true;
     },
+    addExercise(goalId){
+      //za updejtanje telovadb (+1)
+    },
+    
+    updateProgress(goal) {
+      console.log('🎯 Kliknjeno na Dodaj napredek za:', goal.goalTitle);
+      console.log('Tip cilja:', goal.goalType, 'Fitness tip:', goal.fitnessType);
+      
+      this.updatingGoal = goal;
+      this.showUpdateGoal = true;
+      
+      console.log('showUpdateGoal:', this.showUpdateGoal);
+      console.log('updatingGoal:', this.updatingGoal);
+    },
+    
+    closeUpdateModal() {
+      console.log('🚪 Zapiranje modala');
+      this.showUpdateGoal = false;
+      this.updatingGoal = null;
+    },
+    
+    handleProgressAdded() {
+      console.log('✅ Napredek dodan, osvežujem cilje');
+      this.loadAllGoals();
+      this.closeUpdateModal();
+      alert('Napredek uspešno dodan! ✅');
+    },
     
     // Helper metode
     getEmoji(goalType) {
@@ -540,7 +589,6 @@ export default {
       const statusMap = {
         'in progress': 'V teku',
         'completed': 'Dokončan',
-        'done': 'Dokončan'
       };
       return statusMap[status] || status;
     },
@@ -557,7 +605,7 @@ export default {
         case 'C':
           return `${goal.cals} Kakšen naj bo vaš dnevni kalorični vnos`;
         case 'W':
-          return `Od ${goal.currWeight}kg do ${goal.goalWeight}kg`;
+          return `Od ${goal.currentWeight || 0}kg do ${goal.goalWeight}kg`;
         default:
           return goal.goalType;
       }
@@ -566,9 +614,19 @@ export default {
     getCurrentValue(goal) {
       // TODO: Implementiraj dejanske trenutne vrednosti
       switch(goal.goalType) {
-        case 'F': return 0;
-        case 'C': return 0;
-        case 'W': return goal.currWeight;
+        case 'F': 
+          const ftype = goal.fitnessType;
+          if(ftype == 'F'){
+            return goal.weeklyFitnessDone;
+          }
+          else if(ftype == 'R'){
+            return goal.kmsDone;
+          }
+          else{ //S
+            return goal.stepsDone;
+          }
+        case 'C': return goal.eatenCals;
+        case 'W': return goal.currentWeight;
         default: return 0;
       }
     },
@@ -579,7 +637,7 @@ export default {
           switch(goal.fitnessType) {
             case 'F': return goal.weeklyFitness;
             case 'R': return goal.kms;
-            case 'S': return goal.steps;
+            case 'S': return goal.steos;
             default: return 0;
           }
         case 'C': return goal.cals;
@@ -635,6 +693,42 @@ export default {
       try {
         const response = await goalApi.get('/allGoals');
         this.goals = response.data || [];
+        for (const goal of this.goals) {
+          console.log("goal loaded:", goal)
+          const type = goal.goalType;
+          if(type == 'F'){
+            const ftype = goal.fitnessType;
+            if(ftype == 'F'){
+              if(goal.weeklyFitness === goal.weeklyFitnessDone){
+                //completed
+                await goalApi.put(`/complete?id=${goal.id}`);
+              }
+            }
+            else if(ftype == 'R'){
+              if(goal.kms === goal.kmsDone){
+                //completed
+                await goalApi.put(`/complete?id=${goal.id}`);
+              }
+            }
+            else if(ftype == 'S'){
+              if(goal.steps === goal.stepsDone)
+              //completed
+            await goalApi.put(`/complete?id=${goal.id}`);
+            }
+          }
+          else if(type == 'W'){
+            if(goal.currWeight === goal.goalWeight){
+              //completed
+              await goalApi.put(`/complete?id=${goal.id}`);
+            }
+          }
+          else if(type == 'C'){
+            if(goal.cals === goal.eatenCals){
+              //competed
+              await goalApi.put(`/complete?id=${goal.id}`);
+            }
+          }
+        }
       } catch (error) {
         console.error('Napaka pri nalaganju ciljev:', error);
         alert('Napaka pri nalaganju ciljev: ' + error.message);
@@ -679,6 +773,7 @@ export default {
             break;
           case 'C':
             goalData.cals = this.newGoal.cals;
+            goalData.eatenCals = 0;
             break;
           case 'W':
             goalData.currWeight = this.newGoal.currWeight;
@@ -687,6 +782,7 @@ export default {
         }
 
         // API klic
+        console.log("dodajanje goala:", goalData)
         const response = await goalApi.post('/addGoal', goalData);
         
         // Osveži seznam
@@ -715,10 +811,6 @@ export default {
         console.error('Napaka pri brisanju cilja:', error);
         alert('Napaka pri brisanju cilja: ' + error.message);
       }
-    },
-    
-    updateProgress(goalId, amount) {
-      alert('Funkcija posodabljanja napredka bo implementirana kasneje');
     },
 
     // Form navigation
