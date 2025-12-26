@@ -26,14 +26,41 @@
       <!-- Današnji cilji -->
       <section class="card today-goals">
         <div class="card-header">
-          <h2>📋 Moji cilji</h2>
+          <h2>Moji cilji</h2>
           <div class="header-actions">
-            <button @click="startAddGoal" class="refresh-btn">
-              + Dodaj cilj
-            </button>
-            <button @click="loadAllGoals" class="refresh-btn" :disabled="isLoading">
-              🔄 {{ isLoading ? 'Nalagam...' : 'Osveži' }}
-            </button>
+            <!-- Filter gumbi -->
+            <div class="filter-buttons">
+              <button 
+                @click="filterStatus = 'all'" 
+                class="filter-btn"
+                :class="{ active: filterStatus === 'all' }"
+              >
+                Vsi
+              </button>
+              <button 
+                @click="filterStatus = 'in progress'" 
+                class="filter-btn"
+                :class="{ active: filterStatus === 'in progress' }"
+              >
+                V teku
+              </button>
+              <button 
+                @click="filterStatus = 'completed'" 
+                class="filter-btn"
+                :class="{ active: filterStatus === 'completed' }"
+              >
+                Dokončani
+              </button>
+            </div>
+            
+            <div class="action-buttons-header">
+              <button @click="startAddGoal" class="refresh-btn">
+                + Dodaj cilj
+              </button>
+              <button @click="loadAllGoals" class="refresh-btn" :disabled="isLoading">
+                🔄 {{ isLoading ? 'Nalagam...' : 'Osveži' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -51,6 +78,13 @@
             <span class="label">Dokončani:</span>
             <span class="value completed">{{ completedGoalsCount }}</span>
           </div>
+          <!-- Prikaz trenutnega filtra -->
+          <div class="summary-item" v-if="filterStatus !== 'all'">
+            <span class="label">Prikazujem:</span>
+            <span class="value" :class="filterStatus === 'in progress' ? 'active' : 'completed'">
+              {{ filterStatus === 'in progress' ? 'V teku' : 'Dokončane' }}
+            </span>
+          </div>
         </div>
 
         <!-- Loading -->
@@ -60,12 +94,27 @@
         </div>
 
         <!-- Brez ciljev -->
-        <div v-else-if="goals.length === 0" class="no-goals">
+        <div v-else-if="filteredGoals.length === 0" class="no-goals">
           <div class="no-goals-content">
-            <div class="no-goals-icon">🎯</div>
-            <h3>Še nimaš nobenih ciljev</h3>
-            <p>Dodaj svoj prvi cilj za začetek sledenja napredku!</p>
-            <button @click="startAddGoal" class="add-first-goal-btn">
+            <div class="no-goals-icon">
+              <span v-if="filterStatus === 'all'">🎯</span>
+              <span v-else-if="filterStatus === 'in progress'">⏳</span>
+              <span v-else>✅</span>
+            </div>
+            <h3>
+              <span v-if="filterStatus === 'all'">Še nimaš nobenih ciljev</span>
+              <span v-else-if="filterStatus === 'in progress'">Ni ciljev v teku</span>
+              <span v-else>Ni dokončanih ciljev</span>
+            </h3>
+            <p>
+              <span v-if="filterStatus === 'all'">Dodaj svoj prvi cilj za začetek sledenja napredku!</span>
+              <span v-else-if="filterStatus === 'in progress'">Vsi cilji so dokončani ali še nimaš aktivnih ciljev.</span>
+              <span v-else>Še nimaš dokončanih ciljev. Nadaljuj z delom na aktivnih ciljih!</span>
+            </p>
+            <button v-if="filterStatus !== 'all'" @click="filterStatus = 'all'" class="add-first-goal-btn">
+              Prikaži vse cilje
+            </button>
+            <button v-else @click="startAddGoal" class="add-first-goal-btn">
               + Dodaj prvi cilj
             </button>
           </div>
@@ -73,7 +122,7 @@
 
         <!-- Seznam ciljev -->
         <div v-else class="goals-list">
-          <div v-for="goal in goals" :key="goal.id" class="goal-card">
+          <div v-for="goal in filteredGoals" :key="goal.id" class="goal-card">
             <div class="goal-header">
               <div class="goal-type">
                 <div class="type-icon">
@@ -120,7 +169,7 @@
               <span class="goal-date">🔄 Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>              
               <div class="action-buttons">
                 <button 
-                  v-if="!(goal.goalType === 'F' && goal.fitnessType === 'F')"
+                  v-if="!(goal.goalType === 'F' && goal.fitnessType === 'F') && goal.status !== 'completed'"
                   @click="updateProgress(goal)" 
                   class="action-btn add-btn"
                   title="Dodaj napredek"
@@ -128,7 +177,7 @@
                   Dodaj napredek
                 </button>
                 <button 
-                  v-if="goal.goalType === 'F' && goal.fitnessType === 'F'"
+                  v-if="goal.goalType === 'F' && goal.fitnessType === 'F' && goal.status !== 'completed'"
                   @click="addExercise(goal.id)"
                   class="action-btn add-btn"
                   title="Dodaj telovadbo"
@@ -472,6 +521,7 @@ export default {
       isLoading: false,
       showAddGoalForm: false,
       currentStep: 1,
+      filterStatus: 'all', // Dodan filter status
       //minDate: new Date().toISOString().split('T')[0],
       newGoal: {
         goalTitle: '',
@@ -498,6 +548,14 @@ export default {
     }
   },
   computed: {
+    // Filtrirani cilji glede na izbran status
+    filteredGoals() {
+      if (this.filterStatus === 'all') {
+        return this.goals;
+      }
+      return this.goals.filter(goal => goal.status === this.filterStatus);
+    },
+    
     activeGoalsCount() {
       return this.goals.filter(g => g.status === 'in progress').length;
     },
@@ -663,23 +721,41 @@ export default {
         default: return '';
       }
     },
+    
     calculatePercentage(goal) {
       const current = this.getCurrentValue(goal);
       const target = this.getTargetValue(goal) || 1;
-      
-      if (current === target) return 100
-      if (target === 0) return 0
-      
-      if (current > target) {
-        const progress = ((current - target) / current) * 100
-        //console.log("percantage1: ", Math.min(Math.round(progress), 100))
-        return Math.min(Math.round(progress), 100)
+      const goalType = goal.goalType;
+
+      // Če smo dosegli cilj (trenutno = ciljno) → vedno 100%
+      if (current === target) return 100;
+
+      // Za hujšanje (tip 'w')
+      if (goalType === 'w') {
+        // Pri hujšanju je cilj manjša teža, zato je napredek večji, 
+        // ko je trenutna teža manjša
+        
+        // Če je trenutna teža ŽE MANJŠA od cilja → 100%
+        if (current <= target) return 100;
+        
+        // Če je trenutna teža večja od cilja, izračunaj koliko % smo še oddaljeni
+        // Predpostavimo maksimalno oddaljenost (npr. cilj + 30kg = 100kg za cilj 70kg)
+        const maxWeight = target + 30; // ali target * 1.4 ali kak drug faktor
+        
+        // Formula: koliko smo še oddaljeni od cilja
+        // Če je current = maxWeight → 0%
+        // Če je current = target → 100%
+        const progress = ((maxWeight - current) / (maxWeight - target)) * 100;
+        
+        // Zagotovi, da je med 0 in 100
+        return Math.max(0, Math.min(Math.round(progress), 100));
       }
-      else {
-        const progress = (current / target) * 100
-        //console.log("percantage2:", Math.min(Math.round(progress), 100))
-        return Math.min(Math.round(progress), 100)
-      }
+
+      // Za vse OSTALE tipe ciljev
+      if (current >= target) return 100;
+      
+      const progress = (current / target) * 100;
+      return Math.min(Math.round(progress), 100);
     },
     
     formatDate(dateString) {
@@ -848,7 +924,6 @@ export default {
 }
 </script>
 <style scoped>
-  
 .disabled-option {
   color: #95a5a6 !important;
   background-color: #f1f2f6 !important;
@@ -878,6 +953,7 @@ export default {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
+/* FIX: Header - "Nazaj na Dashboard" gumb */
 .goals-header {
   background: white;
   padding: 20px 30px;
@@ -893,6 +969,8 @@ export default {
 .goals-header h1 {
   margin: 0;
   color: #2c3e50;
+  font-size: 28px;
+  flex-grow: 1;
 }
 
 .back-btn {
@@ -904,6 +982,7 @@ export default {
   cursor: pointer;
   font-size: 16px;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .back-btn:hover {
@@ -912,7 +991,7 @@ export default {
 }
 
 .goals-main {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 30px auto;
   padding: 0 20px;
 }
@@ -929,22 +1008,25 @@ export default {
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
-  border-bottom: 2px solid #f0f0f0;
   padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .card-header h2 {
   margin: 0;
   color: #2c3e50;
+  font-size: 24px;
+  margin-bottom: 15px;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .refresh-btn {
@@ -959,6 +1041,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
 }
 
 .refresh-btn:disabled {
@@ -977,12 +1060,14 @@ export default {
   padding: 20px;
   background: #f8f9fa;
   border-radius: 10px;
+  flex-wrap: wrap;
 }
 
 .summary-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 120px;
 }
 
 .label {
@@ -1070,12 +1155,14 @@ export default {
   transform: translateY(-2px);
 }
 
+/* FIX: Goals list - normalna širina */
 .goals-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
+/* FIX: Goal card - normalna širina, boljši izgled */
 .goal-card {
   border: 1px solid #e0e0e0;
   border-radius: 12px;
@@ -1083,6 +1170,7 @@ export default {
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
+  background: white;
 }
 
 .goal-card:hover {
@@ -1097,21 +1185,26 @@ export default {
   padding: 15px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .goal-type {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex-grow: 1;
 }
 
 .type-icon {
   font-size: 24px;
+  flex-shrink: 0;
 }
 
 .goal-type h3 {
   margin: 0 0 5px 0;
   font-size: 18px;
+  word-break: break-word;
 }
 
 .goal-status {
@@ -1120,6 +1213,7 @@ export default {
   font-size: 12px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.2);
+  display: inline-block;
 }
 
 .goal-status.active,
@@ -1138,6 +1232,7 @@ export default {
   align-items: center;
   font-size: 14px;
   opacity: 0.9;
+  flex-shrink: 0;
 }
 
 .goal-description {
@@ -1148,11 +1243,13 @@ export default {
 .goal-description h4 {
   margin: 0 0 10px 0;
   color: #2c3e50;
+  font-size: 16px;
 }
 
 .goal-description p {
   color: #7f8c8d;
   margin: 0 0 15px 0;
+  line-height: 1.5;
 }
 
 .goal-progress {
@@ -1165,6 +1262,7 @@ export default {
   gap: 8px;
   margin-bottom: 10px;
   font-weight: 600;
+  flex-wrap: wrap;
 }
 
 .current {
@@ -1210,16 +1308,63 @@ export default {
   padding: 12px 20px;
   background: #f8f9fa;
   border-top: 1px solid #eee;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .goal-date {
   font-size: 14px;
   color: #7f8c8d;
+  flex-grow: 1;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-buttons-header {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Filter gumbi */
+.filter-btn {
+  padding: 8px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  color: #7f8c8d;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: #3498db;
+  color: #3498db;
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background: #3498db;
+  border-color: #3498db;
+  color: white;
+}
+
+.filter-btn.active:hover {
+  background: #2980b9;
+  border-color: #2980b9;
 }
 
 .action-buttons {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -1233,6 +1378,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
 }
 
 .action-btn:hover {
@@ -1506,19 +1652,34 @@ export default {
   }
   
   .card-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
   }
   
   .header-actions {
-    width: 100%;
-    justify-content: flex-end;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    gap: 15px;
   }
-  
+    
   .summary {
-    flex-direction: column;
-    gap: 20px;
+  display: flex;
+  gap: 30px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+  
+  .summary-item {
+    min-width: auto;
+    width: 100%;
   }
   
   .goal-header {

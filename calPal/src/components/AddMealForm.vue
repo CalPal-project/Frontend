@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import { mealApi } from '@/api'
+import { goalApi, mealApi } from '@/api'
 
 export default {
   name: 'AddMealForm',
@@ -239,11 +239,35 @@ export default {
           amount: food.amount,
         })),
       }
-      console.log('total calories', this.totalCals)
+      console.log('total calories', this.totalMealCalories)
       console.log('💾 Saving meal:', payload)
 
       try {
         const res = await mealApi.post('/addMeal', payload)
+        console.log("meal saved")
+
+        let calorieGoal = null;
+
+        try{
+          
+          const response = await goalApi.get('/getCalorieGoal')
+          console.log("nasli smo goal", response)
+
+          let goal = response.data
+  
+          if(goal){
+            try{
+              await goalApi.put(`/updateProgressCalories?id=${goal.id}&eatenCals=${this.totalMealCalories}`)
+              console.log("posodobili smo goal")
+            }catch (updateErr) {
+              console.error('❌ Error updating calorie goal:', updateErr)
+              // Ne ustavi celotnega procesa, samo zabeleži napako
+            }
+          }
+        }catch (goalErr) {
+          console.error('error nismo nasli goala', goalErr)
+          // Ne ustavi celotnega procesa, samo zabeleži napako
+        }
 
         console.log('✅ Meal saved:', res.data)
         this.successMessage = '✅ Obrok uspešno dodan!'

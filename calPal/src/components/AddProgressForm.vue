@@ -27,7 +27,7 @@
             <span class="unit">kcal</span>
           </div>
           <div v-if="progressData.calories" class="remaining-info">
-            Preostalo do cilja: {{ goal.cals - progressData.calories }} kcal
+            Preostalo do cilja: {{ goal.cals - goal.eatenCals - progressData.calories }} kcal
           </div>
         </div>
 
