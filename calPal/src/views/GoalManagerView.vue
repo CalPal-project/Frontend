@@ -169,7 +169,7 @@
               <span class="goal-date">🔄 Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>              
               <div class="action-buttons">
                 <button 
-                  v-if="!(goal.goalType === 'F' && goal.fitnessType === 'F') && goal.status !== 'completed'"
+                  v-if="!(goal.goalType === 'F' && goal.fitnessType === 'F')"
                   @click="updateProgress(goal)" 
                   class="action-btn add-btn"
                   title="Dodaj napredek"
@@ -377,7 +377,6 @@
                 <!-- KALORIJE (samo če ni že obstoječega) -->
                 <div v-if="newGoal.goalType === 'C' && !hasCalorieGoal">
                   <p class="step-description">Kolikšen naj bo vaš dnevni kalorijski vnos</p>
-                  
                   <div class="form-group">
                     <label for="cals">Dnevne kalorije:</label>
                     <input
@@ -539,7 +538,8 @@ export default {
         // WEIGHT (W)
         currWeight: null,
         goalWeight: null,
-        
+        startWeight: null,
+
         // Splošno
         dateStart: '',
         dateEnd: '',
@@ -590,7 +590,7 @@ export default {
             default: return false;
           }
         case 'C': return !!this.newGoal.cals;
-        case 'W': return !!this.newGoal.currWeight && !!this.newGoal.goalWeight;
+        case 'W': return !!this.newGoal.currWeight && !!this.newGoal.goalWeight && !!this.newGoal.startWeight;
         default: return false;
       }
     }
@@ -667,7 +667,7 @@ export default {
         case 'C':
           return `${goal.cals} kcal v dnevu`;
         case 'W':
-          return `Od ${goal.currentWeight || 0}kg do ${goal.goalWeight}kg`;
+          return `Od ${goal.startWeight || 0}kg do ${goal.goalWeight}kg`;
         default:
           return goal.goalType;
       }
@@ -722,42 +722,90 @@ export default {
       }
     },
     
+    // calculatePercentage(goal) {
+    //   const current = this.getCurrentValue(goal);
+    //   const target = this.getTargetValue(goal) || 1;
+    //   const goalType = goal.goalType;
+
+    //   // Če smo dosegli cilj (trenutno = ciljno) → vedno 100%
+    //   if (current === target) return 100;
+
+    //   // Za hujšanje (tip 'w')
+    //   if (goalType === 'W') {
+    //     // Pri hujšanju je cilj manjša teža, zato je napredek večji, 
+    //     // ko je trenutna teža manjša
+        
+    //     // Če je trenutna teža ŽE MANJŠA od cilja → 100%
+    //     if (current <= target) return 100;
+        
+    //     // Če je trenutna teža večja od cilja, izračunaj koliko % smo še oddaljeni
+    //     // Predpostavimo maksimalno oddaljenost (npr. cilj + 30kg = 100kg za cilj 70kg)
+    //     const maxWeight = target + 30; // ali target * 1.4 ali kak drug faktor
+        
+    //     // Formula: koliko smo še oddaljeni od cilja
+    //     // Če je current = maxWeight → 0%
+    //     // Če je current = target → 100%
+    //     const progress = ((maxWeight - current) / (maxWeight - target)) * 100;
+        
+    //     // Zagotovi, da je med 0 in 100
+    //     return Math.max(0, Math.min(Math.round(progress), 100));
+    //   }
+
+    //   // Za vse OSTALE tipe ciljev
+    //   if (current >= target) return 100;
+      
+    //   const progress = (current / target) * 100;
+    //   return Math.min(Math.round(progress), 100);
+    // },
+
     calculatePercentage(goal) {
       const current = this.getCurrentValue(goal);
       const target = this.getTargetValue(goal) || 1;
       const goalType = goal.goalType;
+      const status = goal.status;
 
-      // Če smo dosegli cilj (trenutno = ciljno) → vedno 100%
-      if (current === target) return 100;
+      // Za težo posebna logika
+      if (goalType === 'W') {
+        const startWeight = goal.startWeight
+        const currentWeight = parseFloat(current);
+        const targetWeight = parseFloat(target);
 
-      // Za hujšanje (tip 'w')
-      if (goalType === 'w') {
-        // Pri hujšanju je cilj manjša teža, zato je napredek večji, 
-        // ko je trenutna teža manjša
+        if (startWeight === targetWeight) return 100;
+        if (targetWeight === 0) return 0;
+
+        // Hujšanje (ciljna teža < začetna teža)
+        if (targetWeight < startWeight) {
+          if (currentWeight <= targetWeight) return 100;
+          if (currentWeight >= startWeight) return 0;
+          
+          const lostWeight = startWeight - currentWeight;
+          const totalToLose = startWeight - targetWeight;
+          return Math.min(Math.round((lostWeight / totalToLose) * 100), 100);
+        }
         
-        // Če je trenutna teža ŽE MANJŠA od cilja → 100%
-        if (current <= target) return 100;
+        // Pridobivanje teže (ciljna teža > začetna teža)
+        if (targetWeight > startWeight) {
+          if (currentWeight >= targetWeight) return 100;
+          if (currentWeight <= startWeight) return 0;
+          
+          const gainedWeight = currentWeight - startWeight;
+          const totalToGain = targetWeight - startWeight;
+          return Math.min(Math.round((gainedWeight / totalToGain) * 100), 100);
+        }
         
-        // Če je trenutna teža večja od cilja, izračunaj koliko % smo še oddaljeni
-        // Predpostavimo maksimalno oddaljenost (npr. cilj + 30kg = 100kg za cilj 70kg)
-        const maxWeight = target + 30; // ali target * 1.4 ali kak drug faktor
-        
-        // Formula: koliko smo še oddaljeni od cilja
-        // Če je current = maxWeight → 0%
-        // Če je current = target → 100%
-        const progress = ((maxWeight - current) / (maxWeight - target)) * 100;
-        
-        // Zagotovi, da je med 0 in 100
-        return Math.max(0, Math.min(Math.round(progress), 100));
+        return 100;
       }
 
-      // Za vse OSTALE tipe ciljev
-      if (current >= target) return 100;
+      // Za vse OSTALE tipe ciljev (F, C)
+      if (target === 0) return 0;
       
-      const progress = (current / target) * 100;
-      return Math.min(Math.round(progress), 100);
+      // Normalen izračun - lahko da več kot 100%
+      let percentage = (current / target) * 100;
+      
+      // Zaokroži
+      return Math.round(percentage);
     },
-    
+        
     formatDate(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -830,10 +878,13 @@ export default {
           case 'W':
             goalData.currWeight = this.newGoal.currWeight;
             goalData.goalWeight = this.newGoal.goalWeight;
+            goalData.startWeight = this.newGoal.currWeight;
+            console.log("current weight", goalData.currWeight)
+            console.log("goal we", goalData.currentWeight)
+            console.log("start", goalData.startWeight)
             break;
         }
 
-        // API klic
         console.log("dodajanje goala:", goalData)
         const response = await goalApi.post('/addGoal', goalData);
         
@@ -887,6 +938,7 @@ export default {
       this.newGoal.cals = null;
       this.newGoal.currWeight = null;
       this.newGoal.goalWeight = null;
+      this.newGoal.startWeight = null;
     },
     
     startAddGoal() {
@@ -912,6 +964,7 @@ export default {
         cals: null,
         currWeight: null,
         goalWeight: null,
+        startWeight: null,
         dateStart: '',
         dateEnd: '',
         status: 'in progress'

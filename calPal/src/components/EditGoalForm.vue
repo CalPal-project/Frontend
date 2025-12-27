@@ -52,6 +52,21 @@
                 placeholder="Npr. 85.5"
               />
             </div>
+
+            <!-- zacetna teza -->
+             <div class="form-group">
+              <label>Začetna teža (kg):</label>
+              <input
+                type="number"
+                v-model="formData.startWeight"
+                step="0.1"
+                min="30"
+                max="300"
+                required
+                class="form-control"
+                placeholder="Npr. 85.5"
+              />
+            </div>
             
             <!-- Ciljna teža -->
             <div class="form-group">
@@ -255,6 +270,7 @@ export default {
         // WEIGHT (W)
         currentWeight: null,
         goalWeight: null,
+        startWeight: null,
         // Splošno
         dateStart: '',
         dateEnd: '',
@@ -296,7 +312,7 @@ export default {
       // Validacija glede na tip cilja
       switch(this.formData.goalType) {
         case 'W':
-          return !!(this.formData.currentWeight && this.formData.goalWeight)
+          return !!(this.formData.currentWeight && this.formData.goalWeight && this.formData.startWeight)
         case 'C':
           return !!this.formData.cals
         case 'F':
@@ -390,6 +406,7 @@ export default {
         // WEIGHT
         currentWeight: goal.currentWeight || goal.currWeight || null,
         goalWeight: goal.goalWeight || null,
+        startWeight: goal.startWeight || null,
         // Splošno
         dateStart: formatDate(goal.dateStart || goal.date_start),
         dateEnd: formatDate(goal.dateEnd || goal.date_end),
@@ -410,6 +427,7 @@ export default {
         cals: null,
         currentWeight: null,
         goalWeight: null,
+        startWeight: null,
         dateStart: '',
         dateEnd: '',
         status: 'active'
@@ -435,6 +453,10 @@ export default {
         }
         if (!this.formData.goalWeight || this.formData.goalWeight <= 0) {
           this.error = 'Ciljna teža mora biti pozitivno število.'
+          return false
+        }
+        if (!this.formData.startWeight || this.formData.startWeight <= 0) {
+          this.error = 'Začetna teža mora biti pozitivno število.'
           return false
         }
       }
@@ -486,18 +508,23 @@ export default {
             goalData.fitnessType = this.formData.fitnessType
             if (this.formData.fitnessType === 'F') {
               goalData.weeklyFitness = parseInt(this.formData.weeklyFitness)
+              goalData.weeklyFitnessDone = this.goal.weeklyFitnessDone || this.goal.weekly_fitness_done 
             } else if (this.formData.fitnessType === 'R') {
               goalData.kms = parseFloat(this.formData.kms)
+              goalData.kmsDone = this.goal.kmsDone || 0
             } else if (this.formData.fitnessType === 'S') {
               goalData.steps = parseInt(this.formData.steps)
+              goalData.stepsDone = this.goal.stepsDone || 0
             }
             break
           case 'C':
             goalData.cals = parseInt(this.formData.cals)
+            goalData.eatenCals = this.goal.eatenCals || 0
             break
           case 'W':
             goalData.currentWeight = parseFloat(this.formData.currentWeight)
             goalData.goalWeight = parseFloat(this.formData.goalWeight)
+            goalData.startWeight = parseFloat(this.formData.startWeight)
             break
         }
         
