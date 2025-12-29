@@ -36,7 +36,7 @@
           
           <!-- Prikaz specifičnih polj glede na tip cilja -->
           
-          <!-- CILJNA TEŽA (W) -->
+          <!-- TEŽA (W) -->
           <div v-if="formData.goalType === 'W'" class="goal-specific-fields">
             <!-- Trenutna teža -->
             <div class="form-group">
@@ -51,21 +51,7 @@
                 class="form-control"
                 placeholder="Npr. 85.5"
               />
-            </div>
-
-            <!-- zacetna teza -->
-             <div class="form-group">
-              <label>Začetna teža (kg):</label>
-              <input
-                type="number"
-                v-model="formData.startWeight"
-                step="0.1"
-                min="30"
-                max="300"
-                required
-                class="form-control"
-                placeholder="Npr. 85.5"
-              />
+              <small class="form-hint">Trenutna teža se uporablja za izračun napredka.</small>
             </div>
             
             <!-- Ciljna teža -->
@@ -76,28 +62,22 @@
                 v-model="formData.goalWeight"
                 step="0.1"
                 min="30"
-                max="600"
+                max="300"
                 required
                 class="form-control"
                 placeholder="Npr. 75"
               />
             </div>
             
-            <!-- Napredek -->
-            <div class="progress-section">
-              <h4>📊 Napredek</h4>
-              <div class="progress-info">
-                <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
-                    :style="{ width: weightProgressPercentage + '%' }"
-                  ></div>
-                </div>
-                <div class="progress-text">
-                  {{ weightProgressPercentage }}% zaključeno 
-                  ({{ formData.currentWeight }}kg / {{ formData.goalWeight }}kg)
-                </div>
+            <!-- Začetna teža (skrito ali samo za branje) -->
+            <div class="form-group" v-if="formData.startWeight">
+              <label>Začetna teža (kg):</label>
+              <div class="readonly-field">
+                {{ formData.startWeight }}
+                <small class="form-hint">Začetna teža se ne more spremeniti.</small>
               </div>
+              <!-- Skrito polje za začetno težo -->
+              <input type="hidden" v-model="formData.startWeight" />
             </div>
           </div>
           
@@ -210,10 +190,8 @@
               required
               class="form-control"
             >
-              <option value="active">Aktiven</option>
               <option value="in progress">V teku</option>
               <option value="completed">Dokončan</option>
-              <option value="paused">Začasno ustavljen</option>
             </select>
           </div>
           
@@ -281,28 +259,7 @@ export default {
       success: null
     }
   },
-  computed: {
-    weightProgressPercentage() {
-      if (!this.formData.currentWeight || !this.formData.goalWeight) return 0
-      
-      const current = parseFloat(this.formData.currentWeight)
-      const goal = parseFloat(this.formData.goalWeight)
-      
-      if (current === goal) return 100
-      if (goal === 0) return 0
-      
-      // Za izgubo teže (trenutna > ciljna)
-      if (current > goal) {
-        const progress = ((current - goal) / current) * 100
-        return Math.min(Math.round(progress), 100)
-      }
-      // Za pridobivanje teže
-      else {
-        const progress = (current / goal) * 100
-        return Math.min(Math.round(progress), 100)
-      }
-    },
-    
+  computed: {    
     isFormValid() {
       // Osnovna validacija
       if (!this.formData.goalTitle || !this.formData.dateStart || !this.formData.status) {
@@ -312,7 +269,8 @@ export default {
       // Validacija glede na tip cilja
       switch(this.formData.goalType) {
         case 'W':
-          return !!(this.formData.currentWeight && this.formData.goalWeight && this.formData.startWeight)
+          // Samo trenutna teža in ciljna teža sta obvezni, začetna je opcijska
+          return !!(this.formData.currentWeight && this.formData.goalWeight)
         case 'C':
           return !!this.formData.cals
         case 'F':
@@ -383,13 +341,28 @@ export default {
         if (!dateString) return ''
         try {
           const date = new Date(dateString)
-          // Preveri če je datum veljaven
           if (isNaN(date.getTime())) return ''
           return date.toISOString().split('T')[0]
         } catch (error) {
           console.error('Error formatting date:', dateString, error)
           return ''
         }
+      }
+      
+      // Pridobite trenutno težo iz različnih možnih polj
+      const getCurrentWeight = () => {
+        // Poskusite v tem vrstnem redu
+        return goal.currentWeight || 
+               goal.currWeight || 
+               (goal.goalType === 'W' ? goal.currentWeight || goal.currWeight : null) ||
+               null
+      }
+      
+      // Pridobite začetno težo
+      const getStartWeight = () => {
+        return goal.startWeight || 
+               (goal.goalType === 'W' ? (goal.startWeight || goal.currWeight) : null) ||
+               null
       }
       
       // Popolno polnjenje formData iz goal objekta
@@ -403,19 +376,25 @@ export default {
         steps: goal.steps || null,
         // CALORIES
         cals: goal.cals || null,
-        // WEIGHT
-        currentWeight: goal.currentWeight || goal.currWeight || null,
+        // WEIGHT - TU JE KLJUČNI POPRAVEK
+        currentWeight: getCurrentWeight(),
         goalWeight: goal.goalWeight || null,
-        startWeight: goal.startWeight || null,
+        startWeight: getStartWeight(),
         // Splošno
         dateStart: formatDate(goal.dateStart || goal.date_start),
         dateEnd: formatDate(goal.dateEnd || goal.date_end),
         status: goal.status || 'active'
       }
       
-      console.log('Form data loaded:', this.formData)
+      // Debug log
+      console.log('Form data loaded for weight goal:', {
+        currentWeight: this.formData.currentWeight,
+        goalWeight: this.formData.goalWeight,
+        startWeight: this.formData.startWeight,
+        originalGoal: goal
+      })
     },
-    
+        
     resetForm() {
       this.formData = {
         goalTitle: '',
@@ -447,16 +426,32 @@ export default {
       
       // Validacija teže
       if (this.formData.goalType === 'W') {
+        // Trenutna teža je obvezna
         if (!this.formData.currentWeight || this.formData.currentWeight <= 0) {
           this.error = 'Trenutna teža mora biti pozitivno število.'
           return false
         }
+        
+        // Ciljna teža je obvezna
         if (!this.formData.goalWeight || this.formData.goalWeight <= 0) {
           this.error = 'Ciljna teža mora biti pozitivno število.'
           return false
         }
+        
+        // Začetna teža - če ni nastavljena, uporabi trenutno težo
         if (!this.formData.startWeight || this.formData.startWeight <= 0) {
-          this.error = 'Začetna teža mora biti pozitivno število.'
+          // Če ni začetne teže, jo nastavimo na trenutno
+          this.formData.startWeight = this.formData.currentWeight
+        }
+        
+        // Dodatna validacija: ciljna teža ne sme biti negativna
+        if (this.formData.goalWeight > 300) {
+          this.error = 'Ciljna teža ne sme biti večja od 300 kg.'
+          return false
+        }
+        
+        if (this.formData.currentWeight > 300) {
+          this.error = 'Trenutna teža ne sme biti večja od 300 kg.'
           return false
         }
       }
@@ -472,10 +467,10 @@ export default {
       // Validacija fitnesa
       if (this.formData.goalType === 'F') {
         if(this.formData.fitnessType == 'R') {
-            if (!this.formData.kms || this.formData.kms < 1) {
-              this.error = 'Kilometri morajo biti pozitivno število.'
-              return false
-            }
+          if (!this.formData.kms || this.formData.kms < 1) {
+            this.error = 'Kilometri morajo biti pozitivno število.'
+            return false
+          }
         }
       }
       
@@ -495,7 +490,7 @@ export default {
       
       try {
         const goalData = {
-          //id: this.goal.id 
+          // id: this.goal.id, // Ne potrebujemo id v bodyju, ker ga pošiljamo v URL
           goalTitle: this.formData.goalTitle,
           goalType: this.formData.goalType,
           status: this.formData.status,
@@ -508,7 +503,7 @@ export default {
             goalData.fitnessType = this.formData.fitnessType
             if (this.formData.fitnessType === 'F') {
               goalData.weeklyFitness = parseInt(this.formData.weeklyFitness)
-              goalData.weeklyFitnessDone = this.goal.weeklyFitnessDone || this.goal.weekly_fitness_done 
+              goalData.weeklyFitnessDone = this.goal.weeklyFitnessDone || this.goal.weekly_fitness_done || 0
             } else if (this.formData.fitnessType === 'R') {
               goalData.kms = parseFloat(this.formData.kms)
               goalData.kmsDone = this.goal.kmsDone || 0
@@ -522,16 +517,25 @@ export default {
             goalData.eatenCals = this.goal.eatenCals || 0
             break
           case 'W':
+            // TEŽA - shranimo vse tri vrednosti
             goalData.currentWeight = parseFloat(this.formData.currentWeight)
             goalData.goalWeight = parseFloat(this.formData.goalWeight)
-            goalData.startWeight = parseFloat(this.formData.startWeight)
+            goalData.startWeight = parseFloat(this.formData.startWeight || this.formData.currentWeight)
+            
+            // Za nazaj kompatibilnost
+            goalData.currWeight = parseFloat(this.formData.currentWeight)
             break
         }
         
-        console.log('Sending update data:', goalData)
+        console.log('Sending update data for weight goal:', goalData)
         
+        // Preverite, da so vsa potrebna polja prisotna
+        if (this.formData.goalType === 'W') {
+          if (!goalData.currentWeight || !goalData.goalWeight) {
+            throw new Error('Manjkajo podatki o teži')
+          }
+        }
         
-        console.log("UREjamo: ", goalData)
         const response = await goalApi.put(`/updateGoal?id=${this.goal.id}`, goalData)
         
         console.log('Update response:', response.data)
@@ -548,11 +552,9 @@ export default {
       } catch (error) {
         console.error('Napaka pri posodabljanju cilja:', error)
         
-        // Boljše obravnavanje napak
         let errorMessage = 'Napaka pri shranjevanju sprememb.'
         
         if (error.response) {
-          // Server je odgovoril z napako
           if (error.response.data && error.response.data.message) {
             errorMessage = error.response.data.message
           } else if (error.response.status === 404) {
@@ -564,6 +566,8 @@ export default {
           }
         } else if (error.request) {
           errorMessage = 'Ni odziva s strežnika. Preverite povezavo.'
+        } else if (error.message) {
+          errorMessage = error.message
         }
         
         this.error = errorMessage
@@ -579,8 +583,23 @@ export default {
   }
 }
 </script>
-
 <style scoped>
+.readonly-field {
+  padding: 12px 15px;
+  background: #f5f5f5;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  color: #666;
+}
+
+.form-hint {
+  display: block;
+  color: #7f8c8d;
+  font-size: 13px;
+  margin-top: 5px;
+  font-style: italic;
+}
+
 .edit-goal-modal {
   position: fixed;
   top: 0;

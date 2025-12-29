@@ -21,8 +21,17 @@
         @close="closeUpdateModal"
         @progress-added="handleProgressAdded"
       />
-      
-
+       <!-- Sporočila na vrhu -->
+      <div v-if="error" class="alert alert-error top-alert">
+        <span class="alert-icon">❌</span>
+        <span>{{ error }}</span>
+        <button @click="error = null" class="alert-close">×</button>
+      </div>
+      <div v-if="successMessage" class="alert alert-success top-alert">
+        <span class="alert-icon">✅</span>
+        <span>{{ successMessage }}</span>
+        <button @click="successMessage = null" class="alert-close">×</button>
+      </div>
       <!-- Današnji cilji -->
       <section class="card today-goals">
         <div class="card-header">
@@ -58,7 +67,7 @@
                 + Dodaj cilj
               </button>
               <button @click="loadAllGoals" class="refresh-btn" :disabled="isLoading">
-                🔄 {{ isLoading ? 'Nalagam...' : 'Osveži' }}
+                {{ isLoading ? 'Nalagam...' : 'Osveži' }}
               </button>
             </div>
           </div>
@@ -136,7 +145,7 @@
                 </div>
               </div>
               <div class="goal-info">
-                <span class="time">📅 {{ formatDate(goal.dateStart) }}</span>
+                <span class="time">{{ formatDate(goal.dateStart) }}</span>
                 <span v-if="goal.dateEnd" class="time">→ {{ formatDate(goal.dateEnd) }}</span>
               </div>
             </div>
@@ -166,7 +175,7 @@
 
             <!-- Akcije -->
             <div class="goal-actions">
-              <span class="goal-date">🔄 Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>              
+              <span class="goal-date">Zadnja sprememba: {{ formatDate(goal.dateStart) }}</span>              
               <div class="action-buttons">
                 <button 
                   v-if="!(goal.goalType === 'F' && goal.fitnessType === 'F')"
@@ -177,14 +186,21 @@
                   Dodaj napredek
                 </button>
                 <button 
-                  v-if="goal.goalType === 'F' && goal.fitnessType === 'F' && goal.status !== 'completed'"
+                  v-if="goal.goalType === 'F' && goal.fitnessType === 'F'"
+                  @click="updateProgress(goal)"
+                  class="action-btn add-btn"
+                  title="Zabeleži kalorije"
+                >
+                  Zabeleži kalorije
+                </button>
+                <button 
+                  v-if="goal.goalType === 'F' && goal.fitnessType === 'F'"
                   @click="addExercise(goal.id)"
                   class="action-btn add-btn"
                   title="Dodaj telovadbo"
                 >
                   Dodaj telovadbo
                 </button>
-                
                 <button 
                   @click="openEditGoal(goal)" 
                   class="action-btn edit-btn"
@@ -205,12 +221,12 @@
         </div>
       </section>
 
-      <!-- Dodaj cilj form (modal style) -->
+      <!-- Dodaj cilj form -->
       <div v-if="showAddGoalForm" class="modal-overlay" @click="resetForm"></div>
       <div v-if="showAddGoalForm" class="add-goal-modal">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>➕ Dodaj nov cilj</h2>
+            <h2>Dodaj nov cilj</h2>
             <button @click="resetForm" class="close-btn">×</button>
           </div>
           
@@ -247,7 +263,7 @@
                       :disabled="hasCalorieGoal"
                       :class="{ 'disabled-option': hasCalorieGoal }"
                     >
-                      <span v-if="hasCalorieGoal">❌ Dnevne kalorije (že obstaja)</span>
+                      <span v-if="hasCalorieGoal">Dnevne kalorije (že obstaja)</span>
                       <span v-else>🍎 Dnevne kalorije</span>
                     </option>
                     <option 
@@ -255,7 +271,7 @@
                       :disabled="hasWeightGoal"
                       :class="{ 'disabled-option': hasWeightGoal }"
                     >
-                      <span v-if="hasWeightGoal">❌ Ciljna teža (že obstaja)</span>
+                      <span v-if="hasWeightGoal">Ciljna teža (že obstaja)</span>
                       <span v-else>⚖️ Ciljna teža</span>
                     </option>
                   </select>
@@ -432,7 +448,7 @@
                 
                 <!-- Prikaz če poskušaš dodati že obstoječ tip -->
                 <div v-if="(newGoal.goalType === 'C' && hasCalorieGoal) || (newGoal.goalType === 'W' && hasWeightGoal)" class="alert error">
-                  <h4>❌ Ne moreš dodati tega cilja!</h4>
+                  <h4>Ne moreš dodati tega cilja!</h4>
                   <p v-if="newGoal.goalType === 'C'">Že imate cilj za dnevne kalorije. Uredite obstoječi cilj ali izberite fitnes cilj.</p>
                   <p v-if="newGoal.goalType === 'W'">Že imate cilj za ciljno težo. Uredite obstoječi cilj ali izberite fitnes cilj.</p>
                   <button @click="newGoal.goalType = 'F'" class="btn-cancel">
@@ -486,13 +502,25 @@
                     class="btn-save" 
                     :disabled="!newGoal.dateStart || (newGoal.goalType === 'C' && hasCalorieGoal) || (newGoal.goalType === 'W' && hasWeightGoal)"
                   >
-                    Dodaj cilj ✅
+                    Dodaj cilj 
                   </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      <!-- Sporočila na dnu -->
+      <div v-if="error" class="alert alert-error bottom-alert">
+        <span class="alert-icon">❌</span>
+        <span>{{ error }}</span>
+        <button @click="error = null" class="alert-close">×</button>
+      </div>
+      
+      <div v-if="successMessage" class="alert alert-success bottom-alert">
+        <span class="alert-icon">✅</span>
+        <span>{{ successMessage }}</span>
+        <button @click="successMessage = null" class="alert-close">×</button>
       </div>
     </main>
   </div>
@@ -515,7 +543,8 @@ export default {
       showUpdateGoal: false,
       selectedGoal: null,
       updatingGoal: null,
-
+      error:null,
+      successMessage: null,
       goals: [],
       isLoading: false,
       showAddGoalForm: false,
@@ -559,22 +588,25 @@ export default {
     activeGoalsCount() {
       return this.goals.filter(g => g.status === 'in progress').length;
     },
+    
     completedGoalsCount() {
-      return this.goals.filter(g =>g.status === 'completed').length;
+      return this.goals.filter(g => g.status === 'completed').length;
     },
+    
     hasCalorieGoal() {
       return this.goals.some(g => g.goalType === 'C' && (g.status === 'in progress'));
     },
+    
     hasWeightGoal() {
       return this.goals.some(g => g.goalType === 'W' && (g.status === 'in progress'));
     },
+    
     canProceedToStep2() {
       return this.newGoal.goalTitle.trim() && this.newGoal.goalType;
     },
+    
     isStep2Valid() {
       if (!this.newGoal.goalType) return false;
-      
-      // Če želiš dodati že obstoječ tip, ne dovoli
       if ((this.newGoal.goalType === 'C' && this.hasCalorieGoal) || 
           (this.newGoal.goalType === 'W' && this.hasWeightGoal)) {
         return false;
@@ -590,13 +622,13 @@ export default {
             default: return false;
           }
         case 'C': return !!this.newGoal.cals;
-        case 'W': return !!this.newGoal.currWeight && !!this.newGoal.goalWeight && !!this.newGoal.startWeight;
+        case 'W': 
+          return !!this.newGoal.currWeight && !!this.newGoal.goalWeight;
         default: return false;
       }
     }
-  },
+  }, 
   methods: {
-    // Navigacija
     goToDashboard() {
       this.$router.push('/dashboard');
     },
@@ -605,23 +637,38 @@ export default {
       this.selectedGoal = goal;
       this.showEditGoalModal = true;
     },
-    async addExercise(goald){
-      //za updejtanje telovadb (+1)
-      console.log("goalid:", goald)
-      const response = await goalApi.put(`/updateProgressFitness?id=${goald}&num=1`);
-      console.log("fitnes updated");
-      await this.loadAllGoals();
+
+    showSuccess(message) {
+      this.successMessage = message;
+      this.error = null; // Počisti morebitne napake
+      
+      // Samodejno skrij sporočilo po 5 sekundah
+      setTimeout(() => {
+        this.successMessage = null;
+      }, 5000);
+    },
+    showError(message) {
+      this.error = message;
+      this.successMessage = null; // Počisti morebitna uspešna sporočila
+      
+      // Samodejno skrij napako po 5 sekundah
+      setTimeout(() => {
+        this.error = null;
+      }, 5000);
     },
     
+    async addExercise(goald){
+      const response = await goalApi.put(`/updateProgressFitness?id=${goald}&num=1`);
+      await this.loadAllGoals();
+    },
+
     updateProgress(goal) {
-      console.log('🎯 Kliknjeno na Dodaj napredek za:', goal.goalTitle);
-      console.log('Tip cilja:', goal.goalType, 'Fitness tip:', goal.fitnessType);
-      
+      // console.log('🎯 Kliknjeno na Dodaj napredek za:', goal.goalTitle);
+      // console.log('Tip cilja:', goal.goalType, 'Fitness tip:', goal.fitnessType);
       this.updatingGoal = goal;
       this.showUpdateGoal = true;
-      
-      console.log('showUpdateGoal:', this.showUpdateGoal);
-      console.log('updatingGoal:', this.updatingGoal);
+      // console.log('showUpdateGoal:', this.showUpdateGoal);
+      // console.log('updatingGoal:', this.updatingGoal);
     },
     
     closeUpdateModal() {
@@ -631,13 +678,11 @@ export default {
     },
     
     handleProgressAdded() {
-      console.log('✅ Napredek dodan, osvežujem cilje');
       this.loadAllGoals();
       this.closeUpdateModal();
-      alert('Napredek uspešno dodan! ✅');
+      this.showSuccess('Napredek uspešno dodan!');
     },
     
-    // Helper metode
     getEmoji(goalType) {
       switch(goalType) {
         case 'F': return '💪';
@@ -687,7 +732,8 @@ export default {
             return goal.stepsDone;
           }
         case 'C': return goal.eatenCals;
-        case 'W': return goal.currentWeight;
+        case 'W': 
+          return goal.currentWeight || goal.currWeight || 0;
         default: return 0;
       }
     },
@@ -722,58 +768,20 @@ export default {
       }
     },
     
-    // calculatePercentage(goal) {
-    //   const current = this.getCurrentValue(goal);
-    //   const target = this.getTargetValue(goal) || 1;
-    //   const goalType = goal.goalType;
-
-    //   // Če smo dosegli cilj (trenutno = ciljno) → vedno 100%
-    //   if (current === target) return 100;
-
-    //   // Za hujšanje (tip 'w')
-    //   if (goalType === 'W') {
-    //     // Pri hujšanju je cilj manjša teža, zato je napredek večji, 
-    //     // ko je trenutna teža manjša
-        
-    //     // Če je trenutna teža ŽE MANJŠA od cilja → 100%
-    //     if (current <= target) return 100;
-        
-    //     // Če je trenutna teža večja od cilja, izračunaj koliko % smo še oddaljeni
-    //     // Predpostavimo maksimalno oddaljenost (npr. cilj + 30kg = 100kg za cilj 70kg)
-    //     const maxWeight = target + 30; // ali target * 1.4 ali kak drug faktor
-        
-    //     // Formula: koliko smo še oddaljeni od cilja
-    //     // Če je current = maxWeight → 0%
-    //     // Če je current = target → 100%
-    //     const progress = ((maxWeight - current) / (maxWeight - target)) * 100;
-        
-    //     // Zagotovi, da je med 0 in 100
-    //     return Math.max(0, Math.min(Math.round(progress), 100));
-    //   }
-
-    //   // Za vse OSTALE tipe ciljev
-    //   if (current >= target) return 100;
-      
-    //   const progress = (current / target) * 100;
-    //   return Math.min(Math.round(progress), 100);
-    // },
-
     calculatePercentage(goal) {
       const current = this.getCurrentValue(goal);
       const target = this.getTargetValue(goal) || 1;
       const goalType = goal.goalType;
       const status = goal.status;
 
-      // Za težo posebna logika
       if (goalType === 'W') {
-        const startWeight = goal.startWeight
+        const startWeight = goal.startWeight;
         const currentWeight = parseFloat(current);
         const targetWeight = parseFloat(target);
 
         if (startWeight === targetWeight) return 100;
         if (targetWeight === 0) return 0;
 
-        // Hujšanje (ciljna teža < začetna teža)
         if (targetWeight < startWeight) {
           if (currentWeight <= targetWeight) return 100;
           if (currentWeight >= startWeight) return 0;
@@ -782,8 +790,7 @@ export default {
           const totalToLose = startWeight - targetWeight;
           return Math.min(Math.round((lostWeight / totalToLose) * 100), 100);
         }
-        
-        // Pridobivanje teže (ciljna teža > začetna teža)
+
         if (targetWeight > startWeight) {
           if (currentWeight >= targetWeight) return 100;
           if (currentWeight <= startWeight) return 0;
@@ -796,13 +803,10 @@ export default {
         return 100;
       }
 
-      // Za vse OSTALE tipe ciljev (F, C)
       if (target === 0) return 0;
-      
-      // Normalen izračun - lahko da več kot 100%
+
       let percentage = (current / target) * 100;
-      
-      // Zaokroži
+
       return Math.round(percentage);
     },
         
@@ -816,7 +820,6 @@ export default {
       });
     },
     
-    // API metode
     async loadAllGoals() {
       this.isLoading = true;
       try {
@@ -824,30 +827,27 @@ export default {
         this.goals = response.data || [];
 
         for (const goal of this.goals) {
-          console.log("goal loaded:", goal)
+          console.log("goal loaded:", goal);
         }
       } catch (error) {
-        console.error('Napaka pri nalaganju ciljev:', error);
         alert('Napaka pri nalaganju ciljev: ' + error.message);
       } finally {
         this.isLoading = false;
       }
     },
     
-    async addGoal() {
+     async addGoal() {
       try {
-        // Preveri če že obstaja goal za C ali W
         if (this.newGoal.goalType === 'C' && this.hasCalorieGoal) {
-          alert('Ne morete dodati novega kalorijskega cilja, ker že imate enega!');
+          this.showError('Ne morete dodati novega kalorijskega cilja, ker že imate enega!');
           return;
         }
         
         if (this.newGoal.goalType === 'W' && this.hasWeightGoal) {
-          alert('Ne morete dodati novega cilja za težo, ker že imate enega!');
+          this.showError('Ne morete dodati novega cilja za težo, ker že imate enega!');
           return;
         }
 
-        // Pripravi podatke za API
         const goalData = {
           goalTitle: this.newGoal.goalTitle,
           goalType: this.newGoal.goalType,
@@ -856,7 +856,6 @@ export default {
           status: 'in progress'
         };
 
-        // Dodaj specifična polja
         switch(this.newGoal.goalType) {
           case 'F':
             goalData.fitnessType = this.newGoal.fitnessType;
@@ -878,26 +877,19 @@ export default {
           case 'W':
             goalData.currWeight = this.newGoal.currWeight;
             goalData.goalWeight = this.newGoal.goalWeight;
-            goalData.startWeight = this.newGoal.currWeight;
-            console.log("current weight", goalData.currWeight)
-            console.log("goal we", goalData.currentWeight)
-            console.log("start", goalData.startWeight)
+            goalData.startWeight = this.newGoal.currWeight; 
+            goalData.currentWeight = this.newGoal.currWeight; 
             break;
         }
 
-        console.log("dodajanje goala:", goalData)
         const response = await goalApi.post('/addGoal', goalData);
-        
-        // Osveži seznam
         await this.loadAllGoals();
-        
-        // Reset forma
         this.resetForm();
-        alert('Cilj uspešno dodan! ✅');
+        this.showSuccess('Cilj uspešno dodan!');
 
       } catch (error) {
         console.error('Napaka pri dodajanju cilja:', error);
-        alert('Napaka pri dodajanju cilja: ' + error.message);
+        this.showError('Napaka pri dodajanju cilja: ' + error.message);
       }
     },
     
@@ -909,14 +901,13 @@ export default {
       try {
         await goalApi.delete(`/deleteGoal?id=${id}`);
         this.loadAllGoals();
-        alert('Cilj uspešno izbrisan!');
+        this.showSuccess('Cilj uspešno izbrisan!');
       } catch (error) {
         console.error('Napaka pri brisanju cilja:', error);
-        alert('Napaka pri brisanju cilja: ' + error.message);
+        this.showError('Napaka pri brisanju cilja: ' + error.message);
       }
     },
 
-    // Form navigation
     nextStep() {
       if (this.currentStep < 3) {
         this.currentStep++;
@@ -930,7 +921,6 @@ export default {
     },
     
     onGoalTypeChange() {
-      // Reset fields when type changes
       this.newGoal.fitnessType = '';
       this.newGoal.weeklyFitness = null;
       this.newGoal.kms = null;
@@ -964,7 +954,6 @@ export default {
         cals: null,
         currWeight: null,
         goalWeight: null,
-        startWeight: null,
         dateStart: '',
         dateEnd: '',
         status: 'in progress'
@@ -1006,7 +995,6 @@ export default {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
-/* FIX: Header - "Nazaj na Dashboard" gumb */
 .goals-header {
   background: white;
   padding: 20px 30px;
@@ -1208,14 +1196,12 @@ export default {
   transform: translateY(-2px);
 }
 
-/* FIX: Goals list - normalna širina */
 .goals-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* FIX: Goal card - normalna širina, boljši izgled */
 .goal-card {
   border: 1px solid #e0e0e0;
   border-radius: 12px;
@@ -1459,7 +1445,6 @@ export default {
   color: white;
 }
 
-/* Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1758,6 +1743,96 @@ export default {
   
   .add-goal-modal {
     width: 95%;
+  }
+}
+.alert {
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin: 15px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+}
+
+.alert-error {
+  background: linear-gradient(to right, #ffeaea 0%, #fff5f5 100%);
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+}
+
+.alert-error::before {
+  background: #c0392b;
+}
+
+.alert-success {
+  background: linear-gradient(to right, #e8f7ee 0%, #f0f9f3 100%);
+  color: #27ae60;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-success::before {
+  background: #27ae60;
+}
+
+.alert-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.alert-close {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.alert-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.top-alert {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.bottom-alert {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

@@ -106,12 +106,10 @@ export default {
     }
   },
   computed: {
-    // Izračunaj skupne kalorije obroka
     totalMealCalories() {
       return this.selectedFoods.reduce((sum, food) => sum + food.calories, 0)
     },
 
-    // Posamezne kalorije za prikaz (če še potrebuješ)
     totalSelectedCalories() {
       return this.totalMealCalories
     },
@@ -124,7 +122,6 @@ export default {
     onSearchInput() {
       this.showDropdown = this.search.length >= 2
 
-      // Debounce search
       if (this.searchTimeout) {
         clearTimeout(this.searchTimeout)
       }
@@ -141,9 +138,6 @@ export default {
       }
 
       try {
-        console.log('🔍 Searching API for:', this.search)
-
-        // Testiraj obe poti
         const res = await mealApi.get('/findFood', {
           params: { ime: this.search },
         })
@@ -152,29 +146,19 @@ export default {
         this.foods = res.data || []
         this.error = null
       } catch (err) {
-        console.error('❌ API Error:', err)
+        console.error('API Error:', err)
         console.error('Error response:', err.response)
 
         this.foods = []
         this.error = 'Napaka pri iskanju hrane'
-
-        // // Debug - dodaj testne podatke
-        // if (process.env.NODE_ENV === 'development') {
-        //   this.foods = [
-        //     { id: 1, foodName: 'Test hrana 1', calories: 100 },
-        //     { id: 2, foodName: 'Test hrana 2', calories: 200 }
-        //   ]
-        // }
       }
     },
 
     selectFood(food) {
-      console.log('👉 Selected food:', food)
       this.selectedFood = { ...food }
       this.foodAmount = 100
       this.showDropdown = false
-      // NE: this.search = '' // To povzroči infinite loop!
-      this.foods = [] // samo počisti dropdown
+      this.foods = [] 
     },
 
     addFoodToMeal() {
@@ -192,14 +176,10 @@ export default {
 
       this.selectedFoods.push({
         id: this.selectedFood.id,
-        //foodName: this.selectedFood.foodName, // Shrani kot 'name' za prikaz
-        foodName: this.selectedFood.foodName, // Ohrani original
+        foodName: this.selectedFood.foodName, 
         amount: this.foodAmount,
         calories: calories,
       })
-
-      console.log('➕ Added food:', this.selectedFoods[this.selectedFoods.length - 1])
-
       this.selectedFood = null
       this.foodAmount = 100
       this.search = ''
@@ -229,9 +209,8 @@ export default {
 
       const dateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
 
-      // Pravilna struktura za tvoj backend
       const payload = {
-        mealType: this.mealType.charAt(0), // Samo prva črka: 'Z', 'K', 'V', 'P'
+        mealType: this.mealType.charAt(0), 
         dateTime: dateTime,
         calories: this.totalMealCalories,
         foods: this.selectedFoods.map((food) => ({
@@ -239,8 +218,7 @@ export default {
           amount: food.amount,
         })),
       }
-      console.log('total calories', this.totalMealCalories)
-      console.log('💾 Saving meal:', payload)
+      console.log('Saving meal:', payload)
 
       try {
         const res = await mealApi.post('/addMeal', payload)
@@ -251,26 +229,21 @@ export default {
         try{
           
           const response = await goalApi.get('/getCalorieGoal')
-          console.log("nasli smo goal", response)
 
           let goal = response.data
   
           if(goal){
             try{
               await goalApi.put(`/updateProgressCalories?id=${goal.id}&eatenCals=${this.totalMealCalories}`)
-              console.log("posodobili smo goal")
-            }catch (updateErr) {
-              console.error('❌ Error updating calorie goal:', updateErr)
-              // Ne ustavi celotnega procesa, samo zabeleži napako
+            } catch (updateErr) {
+              console.error('Error updating calorie goal:', updateErr)
             }
           }
-        }catch (goalErr) {
+        } catch (goalErr) {
           console.error('error nismo nasli goala', goalErr)
           // Ne ustavi celotnega procesa, samo zabeleži napako
         }
-
-        console.log('✅ Meal saved:', res.data)
-        this.successMessage = '✅ Obrok uspešno dodan!'
+        this.successMessage = 'Obrok uspešno dodan!'
 
         setTimeout(() => {
           this.resetForm()

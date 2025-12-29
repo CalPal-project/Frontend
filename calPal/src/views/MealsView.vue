@@ -108,7 +108,6 @@ export default {
   computed: {
     caloriesOfTheDay() {
       return this.meals.reduce((total, meal) => {
-        // Preverimo, če calories obstaja in je število
         const mealCalories = meal.calories
         if (mealCalories !== null && mealCalories !== undefined) {
           return total + mealCalories
@@ -163,7 +162,6 @@ export default {
       } catch (err) {
         console.error('Napaka pri nalaganju obrokov:', err)
         this.error = 'Napaka pri nalaganju obrokov'
-        // Za testiranje - dodaj testne podatke če API še ne deluje
       } finally {
         this.loading = false
       }
@@ -175,24 +173,13 @@ export default {
       }
       try {
         const response = await mealApi.delete(`deleteMeal?id=${id}`)
-        this.loadMeals() // Osveži seznam
+        this.loadMeals() 
       } catch (err) {
         console.error('Napaka pri brisanju obroka:', err)
         console.error('Error response:', err.response)
         alert('Napaka pri brisanju obroka: ' + (err.response?.data || err.message))
       }
     },
-
-    // async updateMeal(id){
-    //   try {
-    //     const response = await mealApi.update(`updateMeal?id=${id}`)
-    //     this.loadMeals() // Osveži seznam
-    //   } catch (err) {
-    //     console.error('Napaka pri brisanju obroka:', err);
-    //     console.error('Error response:', err.response);
-    //     alert('Napaka pri brisanju obroka: ' + (err.response?.data || err.message))
-    //   }
-    // },
 
     formatDate(dateString) {
       const date = new Date(dateString)

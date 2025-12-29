@@ -112,21 +112,20 @@
         <!-- Fitnes: Telovadba (če je še potrebno) -->
         <div v-else-if="goal.goalType === 'F' && goal.fitnessType === 'F'" class="form-group">
           <label for="workouts">
-            <span class="input-label">Dodaj telovadbe:</span>
-            <span class="input-info">Tedenski cilj: {{ goal.weeklyFitness }} telovadb</span>
+            <span class="input-label">Zabeleži porabljene kalorije:</span>
           </label>
           <div class="input-with-unit">
             <input
               id="workouts"
-              v-model="progressData.workouts"
+              v-model="progressData.calsBurned"
               type="number"
               min="0"
               step="1"
-              placeholder="Število telovadb"
+              placeholder="Število porabljenih kalorij"
               class="form-control"
               @keyup.enter="submitProgress"
             />
-            <span class="unit">krat</span>
+            <span class="unit">kcal</span>
           </div>
         </div>
 
@@ -184,7 +183,7 @@ export default {
       if (this.goal.goalType === 'F') {
         if (this.goal.fitnessType === 'R') return '🏃 Dodaj kilometre';
         if (this.goal.fitnessType === 'S') return '👣 Dodaj korake';
-        if (this.goal.fitnessType === 'F') return '💪 Dodaj telovadbo';
+        if (this.goal.fitnessType === 'F') return '💪 Zabeleži porabljene kalorije';
       }
       return 'Dodaj napredek';
     },
@@ -205,7 +204,7 @@ export default {
           return data.steps !== null && data.steps >= 0;
         }
         if (this.goal.fitnessType === 'F') {
-          return data.workouts !== null && data.workouts >= 0;
+          return data.calsBurned !== null && data.calsBurned >= 0;
         }
       }
       return false;
@@ -254,6 +253,22 @@ export default {
             console.log("updejtam steps", steps)
             const respnse = await goalApi.put(`/updateProgressFitness?id=${this.goal.id}&num=${steps}`);
           }
+          else if(this.goal.fitnessType == 'F'){
+            const calsb = parseInt(this.progressData.calsBurned);
+            try{
+                const res = await goalApi.get('/getCalorieGoal')
+                let goal = res.data
+                if(goal){
+                  try{
+                    await goalApi.put(`/updateProgressCalories?id=${goal.id}&eatenCals=${calsb}`)
+                  } catch (updateErr){
+                    console.error('Error updating calorie goal:', updateErr)
+                  }
+                }
+              } catch (goalErr) {
+                  console.error('error nismo nasli goala', goalErr)
+              }
+            }
         }
         
         console.log('Pošiljam napredek:', payload);
@@ -267,9 +282,6 @@ export default {
         
         this.$emit('progress-added', payload);
         this.resetForm();
-        
-        // Obvestilo za uporabnika
-        this.showSuccessMessage();
         
       } catch (error) {
         console.error('Napaka pri shranjevanju napredka:', error);
@@ -287,30 +299,6 @@ export default {
         period: 'daily'
       };
     },
-    
-    showSuccessMessage() {
-      let message = 'Napredek uspešno shranjen!';
-      
-      if (this.goal.goalType === 'C') {
-        message = `Zabeleženih ${this.progressData.calories} kcal!`;
-      } 
-      else if (this.goal.goalType === 'W') {
-        message = `Teža posodobljena na ${this.progressData.weight}kg!`;
-      }
-      else if (this.goal.goalType === 'F') {
-        if (this.goal.fitnessType === 'R') {
-          message = `Dodanih ${this.progressData.distance}km teka/hode!`;
-        }
-        else if (this.goal.fitnessType === 'S') {
-          message = `Dodanih ${this.progressData.steps} korakov!`;
-        }
-        else if (this.goal.fitnessType === 'F') {
-          message = `Dodanih ${this.progressData.workouts} telovadb!`;
-        }
-      }
-      
-      alert('✅ ' + message);
-    }
   }
 }
 </script>
