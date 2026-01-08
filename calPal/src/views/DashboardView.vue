@@ -209,8 +209,19 @@ export default {
   },
   methods: {
     logout() {
+      // Odstrani VSE podatke o prijavi
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('token_expiry')
       localStorage.removeItem('currentUser')
+      
+      // Počisti tudi morebitne druge podatke
+      sessionStorage.clear()
+      
+      // Preusmeri na login stran
       this.$router.push('/login')
+      
+      console.log('Uporabnik uspešno odjavljen')
     },
 
     hideGoalManager() {
