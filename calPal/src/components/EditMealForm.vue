@@ -376,6 +376,10 @@
   </script>
 
   <style scoped>
+    @import '@/style/EditMealForm.css';
+  </style>
+
+  <!-- <style scoped>
   .edit-meal-modal {
     position: fixed;
     top: 0;
@@ -731,4 +735,4 @@
     color: #c0392b;
     border: 2px solid #f5c6cb;
   }
-  </style>
+  </style> -->

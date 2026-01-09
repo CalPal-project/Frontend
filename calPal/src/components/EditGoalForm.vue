@@ -583,7 +583,11 @@ export default {
   }
 }
 </script>
+
 <style scoped>
+  @import '@/style/EditGoalForm.css';
+</style>
+<!-- <style scoped>
 .readonly-field {
   padding: 12px 15px;
   background: #f5f5f5;
@@ -876,4 +880,4 @@ export default {
     width: 100%;
   }
 }
-</style>
+</style> -->

@@ -8,7 +8,7 @@
           <span class="welcome"
             >Pozdravljen, <strong>{{ currentUser }}</strong
             >!</span>
-          <button @click="logout" class="logout-btn">🚪 Odjava</button>
+          <button @click="logoutButton" class="logout-btn">🚪 Odjava</button>
         </div>
       </div>
     </header>
@@ -177,6 +177,8 @@
 import GoalManager from '@/views/GoalManagerView.vue'
 import EditGoalForm from '@/components/EditGoalForm.vue';
 import { mealApi } from '@/api'
+//import { isAuthenticated, getToken, getRefreshToken, setTokens, logout } from '@/Authentication'; // DODAJ vse potrebne funkcije
+import { auth } from '@/Authentication'; // Import auth objekta
 
 export default {
   name: 'DashboardView',
@@ -197,18 +199,40 @@ export default {
       return new Date().getFullYear()
     },
   },
-  mounted() {
+async mounted() {
     // Preberi uporabnika iz localStorage
     const user = localStorage.getItem('currentUser')
     if (user) {
       this.currentUser = user
     }
-    
-    // Naloži zadnji obrok
-    this.loadLastMeal()
+
+    try {
+      // Uporabi auth.isAuthenticated()
+      const authData = await auth.isAuthenticated();
+      
+      if (!authData) {
+        console.log("Authentication failed");
+        // Preusmeri na login
+        this.$router.push('/login');
+        return;
+      }
+      
+      // Če je avtentikacija uspela
+      if (authData.user) {
+        this.currentUser = authData.user;
+      }
+      
+      // Naloži zadnji obrok
+      await this.loadLastMeal();
+      
+    } catch(error) {
+      console.error("Authentication failed:", error);
+      // Preusmeri na login
+      this.$router.push('/login');
+    }
   },
   methods: {
-    logout() {
+    logoutButton() {
       // Odstrani VSE podatke o prijavi
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
@@ -339,6 +363,9 @@ export default {
 </script>
 
 <style scoped>
+  @import '@/style/DashboardView.css';
+</style>
+<!-- <style scoped>
 .dashboard-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -914,4 +941,4 @@ h2 {
     padding: 15px;
   }
 }
-</style>
+</style> -->

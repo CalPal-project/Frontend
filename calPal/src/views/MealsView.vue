@@ -202,6 +202,10 @@ export default {
 </script>
 
 <style scoped>
+  @import '@/style/MealsView.css';
+</style>
+<!-- 
+<style scoped>
 .meals-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -517,4 +521,4 @@ export default {
     gap: 15px;
   }
 }
-</style>
+</style> -->

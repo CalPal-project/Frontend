@@ -276,6 +276,10 @@ export default {
 </script>
 
 <style scoped>
+  @import '@/style/AddMealForm.css';
+</style>
+
+<!-- <style scoped>
 .add-meal-form {
   background: white;
   padding: 25px;
@@ -489,4 +493,4 @@ h4 {
   margin: 0 0 10px 0;
   color: #2c3e50;
 }
-</style>
+</style> -->

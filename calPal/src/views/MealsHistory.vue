@@ -353,6 +353,10 @@ export default {
 </script>
 
 <style scoped>
+  @import '@/style/MealsHistory.css';
+</style>
+<!-- 
+<style scoped>
 .past-meals-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
@@ -847,4 +851,4 @@ export default {
     grid-template-columns: 1fr;
   }
 }
-</style>
+</style> -->

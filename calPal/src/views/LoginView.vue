@@ -347,7 +347,11 @@ export default {
   }
 }
 </script>
+
 <style scoped>
+  @import '@/style/LoginView.css';
+</style>
+<!-- <style scoped>
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -524,4 +528,4 @@ h1 {
   opacity: 0.6;
   cursor: not-allowed;
 }
-</style>
+</style> -->

@@ -1,0 +1,177 @@
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+h1 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 2.2rem;
+}
+
+.subtitle {
+  color: #7f8c8d;
+  margin-bottom: 30px;
+  font-size: 1.1rem;
+}
+
+.error-message {
+  background: #ffe6e6;
+  color: #d32f2f;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #d32f2f;
+  margin-top: 10px;
+}
+
+.success-message {
+  background: #e6ffed;
+  color: #2e7d32;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2e7d32;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.input-group label::after {
+  content: ' *';
+  color: #e74c3c;
+  opacity: 0.7;
+}
+
+.input-group label:not([for*="username"]):not([for*="email"]):not([for*="password"]):not([for*="confirmPassword"])::after {
+  content: '';
+}
+
+.login-input {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: border 0.3s;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.login-input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.login-btn, .register-btn, .cancel-btn {
+  width: 100%;
+  padding: 16px;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+  margin-top: 10px;
+}
+
+.login-btn {
+  background: linear-gradient(to right, #3498db, #2ecc71);
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.register-btn {
+  background: linear-gradient(to right, #27ae60, #2ecc71);
+}
+
+.cancel-btn {
+  background: #95a5a6;
+  margin-top: 10px;
+}
+
+.login-btn:disabled, .register-btn:disabled, .cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.button-group button {
+  flex: 1;
+}
+
+.register-link {
+  margin-top: 20px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+}
+
+.register-link a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+.register-form {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px dashed #eee;
+}
+
+.register-form h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.test-btn:hover:not(:disabled) {
+  background: #3498db;
+  color: white;
+}
+
+.test-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

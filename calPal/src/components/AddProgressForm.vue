@@ -304,6 +304,10 @@ export default {
 </script>
 
 <style scoped>
+  @import '@/style/AddProgressForm.css';
+</style>
+<!-- 
+<style scoped>
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -518,4 +522,4 @@ export default {
     width: 100%;
   }
 }
-</style>
+</style> -->

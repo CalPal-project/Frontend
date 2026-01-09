@@ -965,7 +965,11 @@ export default {
   }
 }
 </script>
+
 <style scoped>
+  @import '@/style/GoalManagerView.css';
+</style>
+<!-- <style scoped>
 .disabled-option {
   color: #95a5a6 !important;
   background-color: #f1f2f6 !important;
@@ -1835,4 +1839,4 @@ export default {
     transform: translateY(0);
   }
 }
-</style>
+</style> -->
