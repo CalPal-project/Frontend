@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h1>🍎 Calorie Tracker</h1>
+      <h1>🍎 CalPal</h1>
       <p class="subtitle">Aplikacija za spremljanje kalorij in ciljev</p>
 
       <!-- Sporočila o napakah -->
@@ -38,7 +38,7 @@
         </div>
 
         <button @click="login" class="login-btn" :disabled="loading">
-          <span v-if="loading">⏳ Prijavljam...</span>
+          <span v-if="loading">Prijavljam...</span>
           <span v-else>Prijava</span>
         </button>
 
@@ -50,7 +50,7 @@
 
       <!-- Registracijski obrazec -->
       <div v-if="showRegister" class="register-form">
-        <h3>📝 Registracija novega računa</h3>
+        <h3>Registracija novega računa</h3>
         
         <div class="input-group">
           <label>Uporabniško ime *</label>
@@ -120,8 +120,8 @@
 
         <div class="button-group">
           <button @click="register" class="register-btn" :disabled="loading">
-            <span v-if="loading">⏳ Ustvarjam račun...</span>
-            <span v-else>✅ Registriraj</span>
+            <span v-if="loading">Ustvarjam račun...</span>
+            <span v-else>Registriraj</span>
           </button>
           <button @click="cancelRegister" class="cancel-btn" :disabled="loading">
             ✕ Prekliči

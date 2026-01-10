@@ -2,7 +2,7 @@
   <div class="goals-container">
     <!-- Header -->
     <header class="goals-header">
-      <h1>🎯 Upravljanje ciljev</h1>
+      <h1> Upravljanje ciljev</h1>
       <button @click="goToDashboard" class="back-btn">← Nazaj na Dashboard</button>
     </header>
 
@@ -23,7 +23,7 @@
       />
        <!-- Sporočila na vrhu -->
       <div v-if="error" class="alert alert-error top-alert">
-        <span class="alert-icon">❌</span>
+        <span class="alert-icon"></span>
         <span>{{ error }}</span>
         <button @click="error = null" class="alert-close">×</button>
       </div>
@@ -99,15 +99,15 @@
         <!-- Loading -->
         <div v-if="isLoading" class="loading">
           <div class="loading-spinner"></div>
-          <p>⏳ Nalagam cilje...</p>
+          <p>Nalagam cilje...</p>
         </div>
 
         <!-- Brez ciljev -->
         <div v-else-if="filteredGoals.length === 0" class="no-goals">
           <div class="no-goals-content">
             <div class="no-goals-icon">
-              <span v-if="filterStatus === 'all'">🎯</span>
-              <span v-else-if="filterStatus === 'in progress'">⏳</span>
+              <span v-if="filterStatus === 'all'"></span>
+              <span v-else-if="filterStatus === 'in progress'"></span>
               <span v-else>✅</span>
             </div>
             <h3>
@@ -278,10 +278,10 @@
                   
                   <!-- Prikaz opozoril samo če je tip izbran -->
                   <div v-if="newGoal.goalType === 'C' && hasCalorieGoal" class="alert warning">
-                    ⚠️ Že imate cilj za dnevne kalorije! Uporabite lahko samo fitnes cilje.
+                    Že imate cilj za dnevne kalorije! Uporabite lahko samo fitnes cilje.
                   </div>
                   <div v-if="newGoal.goalType === 'W' && hasWeightGoal" class="alert warning">
-                    ⚠️ Že imate cilj za ciljno težo! Uporabite lahko samo fitnes cilje.
+                    Že imate cilj za ciljno težo! Uporabite lahko samo fitnes cilje.
                   </div>
                 </div>
                 
@@ -314,7 +314,6 @@
                           value="F" 
                           class="option-radio"
                         />
-                        <span class="option-icon">💪</span>
                         <span class="option-text">
                           <strong>Telovadba</strong><br>
                           <small>Kolikokrat na teden želite telovaditi</small>
@@ -342,7 +341,6 @@
                           value="R" 
                           class="option-radio"
                         />
-                        <span class="option-icon">🏃</span>
                         <span class="option-text">
                           <strong>Tek/hoja</strong><br>
                           <small>Koliko kliometrov na teden želite prehoditi ali preteči</small>
@@ -369,7 +367,6 @@
                           value="S" 
                           class="option-radio"
                         />
-                        <span class="option-icon">👣</span>
                         <span class="option-text">
                           <strong>Koraki</strong><br>
                           <small>Korakov na dan</small>
@@ -512,13 +509,11 @@
       </div>
       <!-- Sporočila na dnu -->
       <div v-if="error" class="alert alert-error bottom-alert">
-        <span class="alert-icon">❌</span>
         <span>{{ error }}</span>
         <button @click="error = null" class="alert-close">×</button>
       </div>
       
       <div v-if="successMessage" class="alert alert-success bottom-alert">
-        <span class="alert-icon">✅</span>
         <span>{{ successMessage }}</span>
         <button @click="successMessage = null" class="alert-close">×</button>
       </div>
@@ -628,9 +623,32 @@ export default {
       }
     }
   }, 
+  async mounted() {
+    await this.getCurrentUser()
+    await this.loadAllGoals();
+  },
   methods: {
     goToDashboard() {
       this.$router.push('/dashboard');
+    },
+
+    async getCurrentUser() {
+      try {
+        const accessToken = localStorage.getItem("access_token");
+        if (!accessToken) return;
+
+        const response = await fetch("http://localhost:8081/api/auth/getUser", {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Napaka pri pridobivanju uporabnika');
+
+        this.userId = data.user.id;
+      } catch (err) {
+        console.error('Napaka v getCurrentUser:', err);
+      }
     },
     
     openEditGoal(goal) {
@@ -823,7 +841,7 @@ export default {
     async loadAllGoals() {
       this.isLoading = true;
       try {
-        const response = await goalApi.get('/allGoals');
+        const response = await goalApi.get(`/allGoals?userId=${this.userId}`);
         this.goals = response.data || [];
 
         for (const goal of this.goals) {
@@ -853,7 +871,8 @@ export default {
           goalType: this.newGoal.goalType,
           dateStart: this.newGoal.dateStart,
           dateEnd: this.newGoal.dateEnd || null,
-          status: 'in progress'
+          status: 'in progress',
+          userId: this.userId,
         };
 
         switch(this.newGoal.goalType) {
@@ -960,9 +979,6 @@ export default {
       };
     }
   },
-  mounted() {
-    this.loadAllGoals();
-  }
 }
 </script>
 

@@ -1,6 +1,6 @@
 <template>
   <div class="add-meal-form card">
-    <h2>➕ Dodaj obrok</h2>
+    <h2>Dodaj obrok</h2>
 
     <!-- Tip obroka -->
     <div class="form-group">
@@ -56,7 +56,7 @@
 
     <!-- Seznam dodanih hran -->
     <div v-if="selectedFoods.length > 0" class="added-foods">
-      <h3>🍽️ Dodane hrane:</h3>
+      <h3>Dodane hrane:</h3>
       <ul class="food-list">
         <li v-for="(food, index) in selectedFoods" :key="index" class="food-item">
           <span class="food-name">{{ food.foodName }}</span>
@@ -72,7 +72,7 @@
 
     <!-- Shranjevanje obroka -->
     <div class="form-actions">
-      <button @click="saveMeal" class="btn-save" :disabled="!canSaveMeal">💾 Shrani obrok</button>
+      <button @click="saveMeal" class="btn-save" :disabled="!canSaveMeal">Shrani obrok</button>
       <button @click="resetForm" class="btn-reset">🔄 Ponastavi</button>
     </div>
 
@@ -103,7 +103,11 @@ export default {
       successMessage: null,
       showDropdown: false,
       searchTimeout: null,
+      userId: null
     }
+  },
+  mounted() {
+    this.getCurrentUser()
   },
   computed: {
     totalMealCalories() {
@@ -119,6 +123,39 @@ export default {
     },
   },
   methods: {
+     async getCurrentUser() {
+      try {
+        const accessToken = localStorage.getItem("access_token");
+
+        if (!accessToken) {
+          console.error("No access token in localStorage.");
+          return;
+        }
+
+        const response = await fetch("http://localhost:8081/api/auth/getUser", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`
+          }
+        });
+
+        const data = await response.json();
+        console.log("RAW RESPONSE:", data);
+
+        if (!response.ok) {
+          console.error("API error:", data);
+          return;
+        }
+
+        //this.username = data.user.username;
+        this.userId = data.user.id;
+
+        console.log( "UserID:", this.userId);
+
+      } catch (error) {
+        console.error("Napaka v getCurrentUser:", error);
+      }
+    },
     onSearchInput() {
       this.showDropdown = this.search.length >= 2
 
@@ -217,6 +254,7 @@ export default {
           foodId: food.id,
           amount: food.amount,
         })),
+        userId: this.userId
       }
       console.log('Saving meal:', payload)
 
@@ -228,12 +266,14 @@ export default {
 
         try{
           
+          //to popravi da gleda samo trenutnega uporabnika 
           const response = await goalApi.get('/getCalorieGoal')
 
           let goal = response.data
   
           if(goal){
             try{
+              //to popravi za uporabnika
               await goalApi.put(`/updateProgressCalories?id=${goal.id}&eatenCals=${this.totalMealCalories}`)
             } catch (updateErr) {
               console.error('Error updating calorie goal:', updateErr)

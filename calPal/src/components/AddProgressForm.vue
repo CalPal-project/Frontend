@@ -131,7 +131,7 @@
 
         <!-- Napaka - neveljavni tip -->
         <div v-else class="error-message">
-          ❌ Neveljavna kombinacija tipov cilja
+          Neveljavna kombinacija tipov cilja
         </div>
 
         <div class="modal-actions">
@@ -210,10 +210,32 @@ export default {
       return false;
     }
   },
+  async mounted() {
+    await this.getCurrentUser()
+    //this.loadAllGoals();
+  },
   methods: {
     closeModal() {
       this.resetForm();
       this.$emit('close');
+    },
+    async getCurrentUser() {
+      try {
+        const accessToken = localStorage.getItem("access_token");
+        if (!accessToken) return;
+
+        const response = await fetch("http://localhost:8081/api/auth/getUser", {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Napaka pri pridobivanju uporabnika');
+
+        this.userId = data.user.id;
+      } catch (err) {
+        console.error('Napaka v getCurrentUser:', err);
+      }
     },
     
     async submitProgress() {
@@ -256,11 +278,11 @@ export default {
           else if(this.goal.fitnessType == 'F'){
             const calsb = parseInt(this.progressData.calsBurned);
             try{
-                const res = await goalApi.get('/getCalorieGoal')
+                const res = await goalApi.get(`/getCalorieGoal?userId=${this.userId}`)
                 let goal = res.data
                 if(goal){
-                  try{
-                    await goalApi.put(`/updateProgressCalories?id=${goal.id}&eatenCals=${calsb}`)
+                  try{ //naorbe ker rabim dat u minus
+                    await goalApi.put(`/updateProgressCalories?id=${goal.id}&eatenCals=${-calsb}`)
                   } catch (updateErr){
                     console.error('Error updating calorie goal:', updateErr)
                   }

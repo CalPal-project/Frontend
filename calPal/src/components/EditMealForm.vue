@@ -156,7 +156,8 @@
         availableFoods: [],
         saving: false,
         error: null,
-        searchTimeouts: {}
+        searchTimeouts: {},
+        userId: null
       }
     },
     watch: {
@@ -176,10 +177,44 @@
         }, 0)
       }
     },
-    mounted() {
-      this.loadAllFoods()
+    async mounted() {
+      await this.loadAllFoods(),
+      this.getCurrentUser()
     },
     methods: {
+       async getCurrentUser() {
+      try {
+        const accessToken = localStorage.getItem("access_token");
+
+        if (!accessToken) {
+          console.error("No access token in localStorage.");
+          return;
+        }
+
+        const response = await fetch("http://localhost:8081/api/auth/getUser", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`
+          }
+        });
+
+        const data = await response.json();
+        console.log("RAW RESPONSE:", data);
+
+        if (!response.ok) {
+          console.error("API error:", data);
+          return;
+        }
+
+        this.username = data.user.username;
+        this.userId = data.user.id;
+
+        console.log("Current user:", this.username, "ID:", this.userId);
+
+      } catch (error) {
+        console.error("Napaka v getCurrentUser:", error);
+      }
+    },
       async loadAllFoods() {
         try {
           const response = await mealApi.get('/findFood', { params: { ime: '' } })
@@ -346,12 +381,13 @@
             foods: this.formData.foods.map(food => ({
               foodId: food.foodId, 
               amount: parseFloat(food.amount)
-            }))
+            })),
+            userId: this.userId
           }
           
           await mealApi.put(`/updateMeal?id=${this.meal.id}`, mealData)
           
-          //this.$emit('meal-updated')
+          this.$emit('meal-updated')
           this.close()
           
         } catch (error) {

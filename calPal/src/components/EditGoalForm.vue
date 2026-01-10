@@ -4,7 +4,7 @@
     
     <div class="modal-content">
       <div class="modal-header">
-        <h2>✏️ Uredi cilj</h2>
+        <h2>Uredi cilj</h2>
         <button @click="close" class="close-btn">×</button>
       </div>
       
@@ -205,7 +205,7 @@
               :disabled="saving || !isFormValid" 
               class="btn-save"
             >
-              {{ saving ? 'Shranjujem...' : '💾 Shrani spremembe' }}
+              {{ saving ? 'Shranjujem...' : 'Shrani spremembe' }}
             </button>
           </div>
           
@@ -256,7 +256,8 @@ export default {
       },
       saving: false,
       error: null,
-      success: null
+      success: null,
+      userId: null
     }
   },
   computed: {    
@@ -297,7 +298,29 @@ export default {
       }
     }
   },
+  async mounted() {
+    await this.getCurrentUser()
+    //this.loadAllGoals();
+  },
   methods: {
+    async getCurrentUser() {
+      try {
+        const accessToken = localStorage.getItem("access_token");
+        if (!accessToken) return;
+
+        const response = await fetch("http://localhost:8081/api/auth/getUser", {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Napaka pri pridobivanju uporabnika');
+
+        this.userId = data.user.id;
+      } catch (err) {
+        console.error('Napaka v getCurrentUser:', err);
+      }
+    },
     getEmoji(goalType) {
       switch(goalType) {
         case 'F': return '💪'
@@ -495,7 +518,8 @@ export default {
           goalType: this.formData.goalType,
           status: this.formData.status,
           dateStart: this.formData.dateStart,
-          dateEnd: this.formData.dateEnd || null
+          dateEnd: this.formData.dateEnd || null,
+          userId: this.userId
         }
         
         switch(this.formData.goalType) {
