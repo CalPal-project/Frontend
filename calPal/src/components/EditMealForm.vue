@@ -5,7 +5,7 @@
       
       <div class="modal-content">
         <div class="modal-header">
-          <h2>✏️ Uredi obrok</h2>
+          <h2>Uredi obrok</h2>
           <button @click="close" class="close-btn">×</button>
         </div>
         
@@ -39,7 +39,7 @@
             
             <!-- Seznam hran -->
             <div class="foods-section">
-              <h3>🍽️ Hrana v obroku:</h3>
+              <h3>Hrana v obroku:</h3>
               
               <div v-for="(food, index) in formData.foods" :key="index" class="food-item-edit">
                 <div class="food-row">
@@ -123,7 +123,7 @@
                 Prekliči
               </button>
               <button type="submit" :disabled="saving" class="btn-save">
-                {{ saving ? 'Shranjujem...' : '💾 Shrani spremembe' }}
+                {{ saving ? 'Shranjujem...' : 'Shrani spremembe' }}
               </button>
             </div>
             
@@ -226,7 +226,16 @@
       
       loadMealData(meal) {
         const date = new Date(meal.dateTime)
-        const formattedDate = date.toISOString().slice(0, 16)
+        //const formattedDate = date.toISOString().slice(0, 16)
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        
+        // Za datetime-local input mora biti YYYY-MM-DDTHH:MM
+        const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`
+  
 
         this.formData = {
           mealType: meal.mealType,

@@ -23,7 +23,7 @@
         <div class="card-header">
           <h2>Današnji obroki</h2>
           <button @click="loadMeals" class="refresh-btn" :disabled="loading">
-            🔄 {{ loading ? 'Nalagam...' : 'Osveži' }}
+             {{ loading ? 'Nalagam...' : 'Osveži' }}
           </button>
         </div>
 

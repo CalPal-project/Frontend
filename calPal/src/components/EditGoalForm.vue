@@ -30,11 +30,9 @@
               <span class="type-text">{{ getGoalTypeText(formData.goalType) }}</span>
               <span class="type-hint">(Tip cilja se ne more spremeniti)</span>
             </div>
-            <!-- Skrit input za tip cilja -->
             <input type="hidden" v-model="formData.goalType" />
           </div>
           
-          <!-- Prikaz specifičnih polj glede na tip cilja -->
           
           <!-- TEŽA (W) -->
           <div v-if="formData.goalType === 'W'" class="goal-specific-fields">
@@ -299,8 +297,7 @@ export default {
     }
   },
   async mounted() {
-    await this.getCurrentUser()
-    //this.loadAllGoals();
+    await this.getCurrentUser();
   },
   methods: {
     async getCurrentUser() {
@@ -371,8 +368,7 @@ export default {
           return ''
         }
       }
-      
-      // Pridobite trenutno težo iz različnih možnih polj
+
       const getCurrentWeight = () => {
         // Poskusite v tem vrstnem redu
         return goal.currentWeight || 
@@ -381,14 +377,12 @@ export default {
                null
       }
       
-      // Pridobite začetno težo
       const getStartWeight = () => {
         return goal.startWeight || 
                (goal.goalType === 'W' ? (goal.startWeight || goal.currWeight) : null) ||
                null
       }
       
-      // Popolno polnjenje formData iz goal objekta
       this.formData = {
         goalTitle: goal.goalTitle || '',
         goalType: goal.goalType || '',

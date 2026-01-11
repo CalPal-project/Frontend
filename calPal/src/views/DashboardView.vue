@@ -52,7 +52,7 @@
         <div class="activity-header">
           <h2>Zadnji dodan obrok</h2>
           <button @click="loadLastMeal" class="refresh-btn-small" :disabled="loadingActivity">
-            🔄 {{ loadingActivity ? 'Osvežujem...' : 'Osveži' }}
+            {{ loadingActivity ? 'Osvežujem...' : 'Osveži' }}
           </button>
         </div>
         

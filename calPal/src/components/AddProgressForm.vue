@@ -178,12 +178,12 @@ export default {
   },
   computed: {
     modalTitle() {
-      if (this.goal.goalType === 'C') return '📊 Dodaj zaužite kalorije';
-      if (this.goal.goalType === 'W') return '⚖️ Posodobi težo';
+      if (this.goal.goalType === 'C') return 'Dodaj zaužite kalorije';
+      if (this.goal.goalType === 'W') return 'Posodobi težo';
       if (this.goal.goalType === 'F') {
-        if (this.goal.fitnessType === 'R') return '🏃 Dodaj kilometre';
-        if (this.goal.fitnessType === 'S') return '👣 Dodaj korake';
-        if (this.goal.fitnessType === 'F') return '💪 Zabeleži porabljene kalorije';
+        if (this.goal.fitnessType === 'R') return 'Dodaj kilometre';
+        if (this.goal.fitnessType === 'S') return 'Dodaj korake';
+        if (this.goal.fitnessType === 'F') return 'Zabeleži porabljene kalorije';
       }
       return 'Dodaj napredek';
     },

@@ -76,7 +76,7 @@
         <div class="card-header">
           <h2>Obroki za {{ formattedSelectedDate }}</h2>
           <button @click="loadMealsForDate" class="refresh-btn" :disabled="loading">
-            🔄 {{ loading ? 'Nalagam...' : 'Osveži' }}
+             {{ loading ? 'Nalagam...' : 'Osveži' }}
           </button>
         </div>
 

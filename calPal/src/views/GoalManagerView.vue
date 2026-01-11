@@ -23,12 +23,10 @@
       />
        <!-- Sporočila na vrhu -->
       <div v-if="error" class="alert alert-error top-alert">
-        <span class="alert-icon"></span>
         <span>{{ error }}</span>
         <button @click="error = null" class="alert-close">×</button>
       </div>
       <div v-if="successMessage" class="alert alert-success top-alert">
-        <span class="alert-icon">✅</span>
         <span>{{ successMessage }}</span>
         <button @click="successMessage = null" class="alert-close">×</button>
       </div>
@@ -108,7 +106,7 @@
             <div class="no-goals-icon">
               <span v-if="filterStatus === 'all'"></span>
               <span v-else-if="filterStatus === 'in progress'"></span>
-              <span v-else>✅</span>
+              <span v-else></span>
             </div>
             <h3>
               <span v-if="filterStatus === 'all'">Še nimaš nobenih ciljev</span>
@@ -787,46 +785,59 @@ export default {
     },
     
     calculatePercentage(goal) {
-      const current = this.getCurrentValue(goal);
-      const target = this.getTargetValue(goal) || 1;
-      const goalType = goal.goalType;
-      const status = goal.status;
+  const current = this.getCurrentValue(goal);
+  const target = this.getTargetValue(goal) || 1;
+  const goalType = goal.goalType;
+  const status = goal.status;
 
-      if (goalType === 'W') {
-        const startWeight = goal.startWeight;
-        const currentWeight = parseFloat(current);
-        const targetWeight = parseFloat(target);
+  if (goalType === 'W') {
+    const startWeight = parseFloat(goal.startWeight);
+    const currentWeight = parseFloat(current);
+    const targetWeight = parseFloat(target);
 
-        if (startWeight === targetWeight) return 100;
-        if (targetWeight === 0) return 0;
+    if (startWeight === targetWeight) return 100;
+    if (targetWeight === 0) return 0;
 
-        if (targetWeight < startWeight) {
-          if (currentWeight <= targetWeight) return 100;
-          if (currentWeight >= startWeight) return 0;
-          
-          const lostWeight = startWeight - currentWeight;
-          const totalToLose = startWeight - targetWeight;
-          return Math.min(Math.round((lostWeight / totalToLose) * 100), 100);
-        }
-
-        if (targetWeight > startWeight) {
-          if (currentWeight >= targetWeight) return 100;
-          if (currentWeight <= startWeight) return 0;
-          
-          const gainedWeight = currentWeight - startWeight;
-          const totalToGain = targetWeight - startWeight;
-          return Math.min(Math.round((gainedWeight / totalToGain) * 100), 100);
-        }
-        
-        return 100;
-      }
-
-      if (target === 0) return 0;
-
-      let percentage = (current / target) * 100;
-
+    // Za hujšanje (weight loss)
+    if (targetWeight < startWeight) {
+      // NE preverjamo če je currentWeight <= targetWeight
+      // Namesto tega vedno izračunamo odstotek
+      
+      // Če je trenutna teža VEČJA ali ENAKA začetni - še nismo začeli
+      if (currentWeight >= startWeight) return 0;
+      
+      // Izračun koliko smo izgubili glede na cilj
+      const lostWeight = startWeight - currentWeight;
+      const totalToLose = startWeight - targetWeight;
+      
+      // Izračunamo odstotek (lahko je več kot 100% če smo presegli cilj)
+      let percentage = (lostWeight / totalToLose) * 100;
+      
+      // Zaokrožimo, vendar ne omejujemo na 100%
+      // Lahko pokaže npr. 125% če smo presegli cilj
       return Math.round(percentage);
-    },
+    }
+
+    // Za pridobivanje teže (weight gain)
+    if (targetWeight > startWeight) {
+      // Podobno za pridobivanje teže
+      if (currentWeight <= startWeight) return 0;
+      
+      const gainedWeight = currentWeight - startWeight;
+      const totalToGain = targetWeight - startWeight;
+      
+      let percentage = (gainedWeight / totalToGain) * 100;
+      return Math.round(percentage);
+    }
+    
+    return 100;
+  }
+
+  if (target === 0) return 0;
+
+  let percentage = (current / target) * 100;
+  return Math.round(percentage);
+},
         
     formatDate(dateString) {
       if (!dateString) return '';

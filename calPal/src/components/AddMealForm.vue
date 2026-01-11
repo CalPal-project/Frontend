@@ -48,8 +48,9 @@
           min="1"
           step="1"
         />
+        <p>gramov</p>
         <button @click="addFoodToMeal" class="btn-add" :disabled="!foodAmount || foodAmount <= 0">
-          Dodaj hrano
+         Dodaj hrano
         </button>
       </div>
     </div>
@@ -73,7 +74,7 @@
     <!-- Shranjevanje obroka -->
     <div class="form-actions">
       <button @click="saveMeal" class="btn-save" :disabled="!canSaveMeal">Shrani obrok</button>
-      <button @click="resetForm" class="btn-reset">🔄 Ponastavi</button>
+      <button @click="resetForm" class="btn-reset"> Ponastavi</button>
     </div>
 
     <!-- Sporočila o napakah/success -->
@@ -267,7 +268,7 @@ export default {
         try{
           
           //to popravi da gleda samo trenutnega uporabnika 
-          const response = await goalApi.get('/getCalorieGoal')
+          const response = await goalApi.get(`/getCalorieGoal?userId=${this.userId}`)
 
           let goal = response.data
   
