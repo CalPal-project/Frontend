@@ -263,11 +263,6 @@ export default {
       this.editingMeal = null
     },
     
-    // handleMealUpdated() {
-    //   this.loadMealsForDate()
-    //   this.closeEditForm()
-    // },
-
     async handleMealUpdated() {
       await this.loadMealsForDate()
       this.closeEditForm()
@@ -295,7 +290,6 @@ export default {
       this.error = null
       
       try {
-        // Pošljemo datum v formatu YYYY-MM-DD
         const response = await mealApi.get('/date', {
           params: { date: this.selectedDate, userId: this.userId }
 
@@ -331,7 +325,6 @@ export default {
     
     selectQuickDate(days) {
       if (days === 'week') {
-        // Pridobi začetek tedna (ponedeljek)
         const today = new Date()
         const dayOfWeek = today.getDay()
         const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
@@ -347,7 +340,6 @@ export default {
     
     isQuickDateActive(days) {
       if (days === 'week') {
-        // Preveri če je izbran začetek tedna
         const selected = new Date(this.selectedDate)
         const today = new Date()
         const dayOfWeek = today.getDay()
@@ -368,7 +360,6 @@ export default {
       
       try {
         await mealApi.delete(`/deleteMeal?id=${id}`)
-        // Odstrani obrok iz seznama
         this.meals = this.meals.filter(meal => meal.id !== id)
       } catch (err) {
         console.error('Napaka pri brisanju obroka:', err)

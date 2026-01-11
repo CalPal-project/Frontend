@@ -260,15 +260,12 @@ export default {
   },
   computed: {    
     isFormValid() {
-      // Osnovna validacija
       if (!this.formData.goalTitle || !this.formData.dateStart || !this.formData.status) {
         return false
       }
-      
-      // Validacija glede na tip cilja
+
       switch(this.formData.goalType) {
         case 'W':
-          // Samo trenutna teža in ciljna teža sta obvezni, začetna je opcijska
           return !!(this.formData.currentWeight && this.formData.goalWeight)
         case 'C':
           return !!this.formData.cals
@@ -370,7 +367,6 @@ export default {
       }
 
       const getCurrentWeight = () => {
-        // Poskusite v tem vrstnem redu
         return goal.currentWeight || 
                goal.currWeight || 
                (goal.goalType === 'W' ? goal.currentWeight || goal.currWeight : null) ||
@@ -393,7 +389,7 @@ export default {
         steps: goal.steps || null,
         // CALORIES
         cals: goal.cals || null,
-        // WEIGHT - TU JE KLJUČNI POPRAVEK
+        // WEIGHT 
         currentWeight: getCurrentWeight(),
         goalWeight: goal.goalWeight || null,
         startWeight: getStartWeight(),
@@ -434,34 +430,22 @@ export default {
     
     validateForm() {
       this.error = null
-      
-      // Validacija datumov
       if (this.formData.dateEnd && this.formData.dateStart > this.formData.dateEnd) {
         this.error = 'Datum konca mora biti kasneje od datuma začetka.'
         return false
       }
-      
-      // Validacija teže
       if (this.formData.goalType === 'W') {
-        // Trenutna teža je obvezna
         if (!this.formData.currentWeight || this.formData.currentWeight <= 0) {
           this.error = 'Trenutna teža mora biti pozitivno število.'
           return false
         }
-        
-        // Ciljna teža je obvezna
         if (!this.formData.goalWeight || this.formData.goalWeight <= 0) {
           this.error = 'Ciljna teža mora biti pozitivno število.'
           return false
         }
-        
-        // Začetna teža - če ni nastavljena, uporabi trenutno težo
         if (!this.formData.startWeight || this.formData.startWeight <= 0) {
-          // Če ni začetne teže, jo nastavimo na trenutno
           this.formData.startWeight = this.formData.currentWeight
         }
-        
-        // Dodatna validacija: ciljna teža ne sme biti negativna
         if (this.formData.goalWeight > 300) {
           this.error = 'Ciljna teža ne sme biti večja od 300 kg.'
           return false
@@ -472,16 +456,12 @@ export default {
           return false
         }
       }
-      
-      // Validacija kalorij
       if (this.formData.goalType === 'C') {
         if (!this.formData.cals || this.formData.cals < 1000 || this.formData.cals > 5000) {
           this.error = 'Dnevne kalorije morajo biti med 1000 in 5000 kcal.'
           return false
         }
       }
-      
-      // Validacija fitnesa
       if (this.formData.goalType === 'F') {
         if(this.formData.fitnessType == 'R') {
           if (!this.formData.kms || this.formData.kms < 1) {
@@ -499,7 +479,6 @@ export default {
       this.error = null
       this.success = null
       
-      // Validacija
       if (!this.validateForm()) {
         this.saving = false
         return
@@ -507,7 +486,6 @@ export default {
       
       try {
         const goalData = {
-          // id: this.goal.id, // Ne potrebujemo id v bodyju, ker ga pošiljamo v URL
           goalTitle: this.formData.goalTitle,
           goalType: this.formData.goalType,
           status: this.formData.status,
@@ -535,19 +513,17 @@ export default {
             goalData.eatenCals = this.goal.eatenCals || 0
             break
           case 'W':
-            // TEŽA - shranimo vse tri vrednosti
+            // TEŽA
             goalData.currentWeight = parseFloat(this.formData.currentWeight)
             goalData.goalWeight = parseFloat(this.formData.goalWeight)
             goalData.startWeight = parseFloat(this.formData.startWeight || this.formData.currentWeight)
-            
-            // Za nazaj kompatibilnost
+
             goalData.currWeight = parseFloat(this.formData.currentWeight)
             break
         }
         
         console.log('Sending update data for weight goal:', goalData)
-        
-        // Preverite, da so vsa potrebna polja prisotna
+
         if (this.formData.goalType === 'W') {
           if (!goalData.currentWeight || !goalData.goalWeight) {
             throw new Error('Manjkajo podatki o teži')
@@ -557,11 +533,9 @@ export default {
         const response = await goalApi.put(`/updateGoal?id=${this.goal.id}`, goalData)
         
         console.log('Update response:', response.data)
-        
-        // Uspešno sporočilo
+
         this.success = 'Cilj uspešno posodobljen!'
-        
-        // Emitiraj dogodek za osvežitev
+
         setTimeout(() => {
           this.$emit('goal-updated')
           this.close()
@@ -605,297 +579,3 @@ export default {
 <style scoped>
   @import '@/style/EditGoalForm.css';
 </style>
-<!-- <style scoped>
-.readonly-field {
-  padding: 12px 15px;
-  background: #f5f5f5;
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  color: #666;
-}
-
-.form-hint {
-  display: block;
-  color: #7f8c8d;
-  font-size: 13px;
-  margin-top: 5px;
-  font-style: italic;
-}
-
-.edit-goal-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(3px);
-}
-
-.modal-content {
-  position: relative;
-  background: white;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from { opacity: 0; transform: translateY(-30px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 25px 30px 20px;
-  border-bottom: 2px solid #f0f0f0;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  border-radius: 16px 16px 0 0;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 24px;
-}
-
-.close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  font-size: 28px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
-}
-
-.modal-body {
-  padding: 30px;
-}
-
-.edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 8px;
-  font-size: 15px;
-}
-
-.form-control {
-  width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 16px;
-  transition: all 0.3s;
-  background: #f8f9fa;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #f5576c;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(245, 87, 108, 0.15);
-}
-
-/* Display za tip cilja in fitness type */
-.goal-type-display,
-.fitness-type-display {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 15px;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-}
-
-.type-icon {
-  font-size: 20px;
-}
-
-.type-text {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.type-hint {
-  color: #7f8c8d;
-  font-size: 14px;
-  margin-left: auto;
-  font-style: italic;
-}
-
-/* Goal specific fields */
-.goal-specific-fields {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid #e9ecef;
-}
-
-/* Progress section */
-.progress-section {
-  margin-top: 15px;
-  padding: 15px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.progress-section h4 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-  font-size: 16px;
-}
-
-.progress-bar {
-  height: 12px;
-  background: #e0e0e0;
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #f093fb, #f5576c);
-  border-radius: 6px;
-  transition: width 0.5s ease;
-}
-
-.progress-text {
-  text-align: center;
-  color: #666;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-/* Form actions */
-.form-actions {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.btn-cancel {
-  flex: 1;
-  padding: 15px;
-  background: #95a5a6;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-cancel:hover {
-  background: #7f8c8d;
-  transform: translateY(-2px);
-}
-
-.btn-save {
-  flex: 2;
-  padding: 15px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-save:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(245, 87, 108, 0.3);
-}
-
-.btn-save:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Alerts */
-.alert {
-  padding: 15px;
-  border-radius: 10px;
-  text-align: center;
-  margin-top: 15px;
-}
-
-.error {
-  background: #ffeaea;
-  color: #c0392b;
-  border: 2px solid #f5c6cb;
-}
-
-.success {
-  background: #d5f4e6;
-  color: #27ae60;
-  border: 2px solid #a3e4c3;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    max-height: 90vh;
-  }
-  
-  .modal-body {
-    padding: 20px;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .btn-cancel,
-  .btn-save {
-    width: 100%;
-  }
-}
-</style> -->

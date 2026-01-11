@@ -37,12 +37,11 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 })
-// Simple auth check
+
 const checkAuth = () => {
   const token = localStorage.getItem('access_token');
   if (!token) return false;
-  
-  // Preveri če je token potekel (lokalno)
+
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.exp * 1000 > Date.now();
@@ -54,7 +53,6 @@ const checkAuth = () => {
 router.beforeEach((to, from, next) => {
   console.log(`Router: ${from.path} -> ${to.path}`);
   
-  // Če stran zahteva avtentikacijo
   if (to.meta.requiresAuth) {
     if (checkAuth()) {
       next(); // Nadaljuj

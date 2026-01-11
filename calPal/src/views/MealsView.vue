@@ -184,19 +184,13 @@ export default {
       this.editingMeal = null
     },
 
-    // async handleMealUpdated() {
-    //   await this.getCurrentUser()
-    //   this.loadMeals()
-    //   this.closeEditForm()
-    // },
     async handleMealUpdated() {
       this.showEditForm = false
       this.editingMeal = null
-      await this.loadMeals()  // naloži nove obroke
+      await this.loadMeals()  
     },
 
     async loadMeals() {
-      //await this.getCurrentUser()
       if (!this.userId) {
         console.error("UserID ni definiran, ne morem naložiti obrokov");
         return;

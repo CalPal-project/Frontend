@@ -23,7 +23,7 @@ export const auth = {
         const refreshToken = auth.getRefreshToken();
         
         if (!accessToken) {
-            console.log("❌ No access token");
+            console.log("No access token");
             return false;
         }
         
@@ -35,13 +35,13 @@ export const auth = {
                 }
             });
             
-            console.log("✅ Validate response:", res.status);
+            console.log("Validate response:", res.status);
             
             if (res.ok) {
                 const data = await res.json();
                 return data;
             } else {
-                console.log("❌ Token invalid (status:", res.status, ")");
+                console.log("Token invalid (status:", res.status, ")");
                 return false;
             }
         } catch (error) {
@@ -51,7 +51,7 @@ export const auth = {
     },
     
     refreshAccessToken: async (refreshToken) => {
-        console.log("🔄 Attempting refresh...");
+        console.log("Attempting refresh...");
         
         try {
             const res = await fetch(`http://localhost:8081/api/auth/refreshToken`, {
@@ -71,7 +71,7 @@ export const auth = {
                 auth.setTokens(tokens.access_token, tokens.refresh_token);
                 return tokens;
             } else {
-                console.log("❌ Refresh failed:", res.status);
+                console.log("Refresh failed:", res.status);
                 return null;
             }
         } catch (error) {
